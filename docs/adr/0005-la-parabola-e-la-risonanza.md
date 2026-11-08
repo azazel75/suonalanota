@@ -40,9 +40,12 @@ La regola resta accesa, ma **in prova**, e non si tocca la soglia a naso:
 
 ## Il resto del secondo giro
 
-- **I colpi duplicati sono spariti**: le coppie entro 300 ms scendono all'11% e quelle con lo stesso
-  nome a 13 su 29 — ma quasi tutte hanno punteggio sotto 0,002, cioè sono rumore, non secondo
-  attacchi. Con la soglia del rumore al loro posto, il difetto è chiuso.
+- **I colpi duplicati si sono diradati, non sono provati spariti.** Nel primo giro le coppie entro
+  300 ms erano 30 su 264, e **28 stavano a 150 ms esatti** — cooldown più passo, il segnale inconfondibile
+  di un attacco contato più volte — con la stessa nota in 22 casi. Nel secondo sono 29 su 242, sparse
+  fra 150 e 250 ms, con la stessa nota solo 13 volte: il pattern stretto è sparito, ma questa misura
+  non basta a dichiarare chiuso il difetto, perché i punteggi di questo giro erano gonfiati dal bug.
+  Lo dirà il terzo.
 - **La ricerca limitata al range ha funzionato**: zero note inventate fuori da Si1–Re6; nel primo
   giro erano comparse Do1, Mi1, Fa#1.
 - **Il secondo giro non è confrontabile col primo**: cambiavano tre cose insieme (codice, range
