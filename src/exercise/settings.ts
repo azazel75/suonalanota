@@ -32,6 +32,7 @@
  */
 import { HIGHEST_MIDI, LOWEST_MIDI } from '../audio/notes';
 import {
+  ADVANCED_RANGE,
   BASE_RANGE,
   isInRange,
   keysInRange,
@@ -45,6 +46,14 @@ import {
 
 /** The three ways a session picks its targets. */
 export type SequenceMode = 'random' | 'preset' | 'list';
+
+/** The three modes, once, for both the URL and the page: no second whitelist to drift. */
+export const SEQUENCE_MODES: readonly SequenceMode[] = ['random', 'preset', 'list'];
+
+/** Whether a string is a mode, so a value read from the page or the URL can be trusted. */
+export function isSequenceMode(value: string | null): value is SequenceMode {
+  return value !== null && (SEQUENCE_MODES as readonly string[]).includes(value);
+}
 
 /** A progressive sequence that ships with the application. */
 export interface Preset {
@@ -205,4 +214,84 @@ const NOTHING_TO_ASK: Readonly<Record<SequenceMode, string>> = {
  */
 export function problemWith(settings: Settings): string | null {
   return targetsOf(settings).length === 0 ? NOTHING_TO_ASK[settings.mode] : null;
+}
+
+/** The parameters a URL may use to dictate the trial, all optional. */
+const CONFIGURATION_PARAMETERS = [
+  'range',
+  'lowest',
+  'highest',
+  'duration',
+  'timeout',
+  'cap',
+  'mode',
+  'preset',
+] as const;
+
+/** The two ranges a URL may name, as names rather than as numbers. */
+const RANGE_PRESETS: Readonly<Record<string, KeyRange>> = {
+  base: BASE_RANGE,
+  advanced: ADVANCED_RANGE,
+};
+
+export interface TrialFromUrl {
+  readonly settings: Settings;
+  /**
+   * True when the URL chose the trial, so the configuration screen is skipped.
+   * It says nothing about the soundcheck: when ticket 09 adds that step, the
+   * step itself will decide whether the URL skipped it.
+   */
+  readonly skipSetup: boolean;
+}
+
+/** A number from the URL, or null when the parameter is absent or not a number. */
+function numberParameter(params: URLSearchParams, name: string): number | null {
+  const raw = params.get(name);
+  if (raw === null || raw.trim() === '') return null;
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : null;
+}
+
+/**
+ * The trial a URL dictates: the main parameters it carries, the defaults for
+ * the ones it leaves out. `duration` and `timeout` are seconds, `lowest` and
+ * `highest` are MIDI numbers, `cap` is a number of wrong colpi (absent or below
+ * one means no cap), `mode` is `random`, `preset` or `list`, `preset` is one of
+ * `PRESETS`, `range` is `base` or `advanced`. A value that makes no sense is
+ * ignored — but its presence still means the URL chose the trial, so the
+ * confirmation is skipped either way.
+ */
+export function settingsFromQuery(params: URLSearchParams): TrialFromUrl {
+  const named = params.get('range');
+  let range = named === null ? DEFAULT_SETTINGS.range : RANGE_PRESETS[named] ?? DEFAULT_SETTINGS.range;
+
+  const lowest = numberParameter(params, 'lowest');
+  const highest = numberParameter(params, 'highest');
+  if (lowest !== null || highest !== null) {
+    range = clampRange(lowest ?? range.lowest, highest ?? range.highest);
+  }
+
+  const duration = numberParameter(params, 'duration');
+  const timeout = numberParameter(params, 'timeout');
+  const cap = numberParameter(params, 'cap');
+  const presetId = params.get('preset');
+  const knownPreset = PRESETS.some((preset) => preset.id === presetId);
+  const mode = params.get('mode');
+
+  const settings = normalise({
+    ...DEFAULT_SETTINGS,
+    range,
+    durationMs: duration === null ? DEFAULT_SETTINGS.durationMs : duration * 1000,
+    targetTimeoutMs: timeout === null ? DEFAULT_SETTINGS.targetTimeoutMs : timeout * 1000,
+    // A link has no checkbox: absent is off, and so is a number that cannot be
+    // a cap. Lifting a zero to one is a rule for the controls, not for a URL.
+    wrongLimit: cap !== null && cap >= 1 ? cap : null,
+    mode: isSequenceMode(mode) ? mode : DEFAULT_SETTINGS.mode,
+    presetId: knownPreset && presetId !== null ? presetId : DEFAULT_SETTINGS.presetId,
+  });
+
+  return {
+    settings,
+    skipSetup: CONFIGURATION_PARAMETERS.some((name) => params.has(name)),
+  };
 }

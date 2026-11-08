@@ -20,6 +20,7 @@ import {
   randomSequence,
   sequenceFor,
   sessionConfigOf,
+  settingsFromQuery,
   type Settings,
 } from '../src/exercise/settings';
 import { ADVANCED_RANGE, BASE_RANGE, isInRange, keysInRange } from '../src/score/staff';
@@ -131,5 +132,66 @@ describe('the settings of the trial', () => {
 
     expect(sequenceFor(withList)).toEqual([64, 62, 60]);
     expect(problemWith({ ...withList, list: [] })).toContain('lista');
+  });
+});
+
+describe('the trial from the URL', () => {
+  const params = (query: string): URLSearchParams => new URLSearchParams(query);
+
+  it('leaves the defaults alone when the URL says nothing', () => {
+    const fromUrl = settingsFromQuery(params(''));
+
+    expect(fromUrl.settings).toEqual(DEFAULT_SETTINGS);
+    expect(fromUrl.skipSetup).toBe(false);
+  });
+
+  it('reads duration and time per target in seconds', () => {
+    const { settings } = settingsFromQuery(params('duration=30&timeout=5'));
+
+    expect(settings.durationMs).toBe(30_000);
+    expect(settings.targetTimeoutMs).toBe(5_000);
+  });
+
+  it('takes a preset range, then the ends the URL overrides', () => {
+    expect(settingsFromQuery(params('range=advanced')).settings.range).toEqual(ADVANCED_RANGE);
+    expect(settingsFromQuery(params('range=advanced&lowest=60')).settings.range)
+      .toEqual({ lowest: 60, highest: ADVANCED_RANGE.highest });
+    expect(settingsFromQuery(params('lowest=70&highest=50')).settings.range)
+      .toEqual({ lowest: 50, highest: 70 });
+  });
+
+  it('reads the cap, the mode and the preset', () => {
+    const { settings } = settingsFromQuery(params('cap=2&mode=preset&preset=due-chiavi'));
+
+    expect(settings.wrongLimit).toBe(2);
+    expect(settings.mode).toBe('preset');
+    expect(settings.presetId).toBe('due-chiavi');
+    expect(sequenceFor(settings)).toHaveLength(14);
+  });
+
+  it('reads a cap below one as no cap, because a link has no checkbox to tick', () => {
+    expect(settingsFromQuery(params('cap=0')).settings.wrongLimit).toBeNull();
+    expect(settingsFromQuery(params('cap=-2')).settings.wrongLimit).toBeNull();
+    expect(settingsFromQuery(params('cap=3')).settings.wrongLimit).toBe(3);
+  });
+
+  it('keeps the defaults for what it cannot read, but skips the confirmation anyway', () => {
+    const { settings, skipSetup } = settingsFromQuery(
+      params('range=xyz&duration=molto&mode=boh&preset=due-chiave'),
+    );
+
+    expect(settings.range).toEqual(BASE_RANGE);
+    expect(settings.durationMs).toBe(60_000);
+    expect(settings.mode).toBe('random');
+    // A typo in a preset id must not land on the staff with nothing to ask.
+    expect(settings.presetId).toBe(DEFAULT_SETTINGS.presetId);
+    expect(problemWith(settings)).toBeNull();
+    expect(skipSetup).toBe(true);
+  });
+
+  it('skips the configuration screen only when the URL chose something', () => {
+    expect(settingsFromQuery(params('duration=30')).skipSetup).toBe(true);
+    expect(settingsFromQuery(params('nonsense=1')).skipSetup).toBe(false);
+    expect(settingsFromQuery(params('autostart=1')).skipSetup).toBe(false);
   });
 });

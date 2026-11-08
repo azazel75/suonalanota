@@ -5,11 +5,40 @@ volta, in chiave di violino e di basso, ascolta il pianoforte dal microfono e pa
 successiva quando sente il tasto giusto o quando scade il tempo. Alla fine dà il punteggio:
 quante centrate, quante sbagliate, quante saltate.
 
-**Stato: l'esercizio.** La pagina mostra un bersaglio alla volta, nella chiave che lascia la nota
-più vicina al rigo, ascolta il pianoforte dal microfono e risponde subito: verde sulla nota giusta,
-rosso sulla sbagliata, e quando l'ottava è incerta non giudica — chiede di ripetere. Otto secondi per
-bersaglio, pausa, e la sessione che si chiude da sola a tempo scaduto o a lista esaurita.
-Mancano il riepilogo con il punteggio, le impostazioni della prova, la classifica e il log.
+**Stato: la prova e il riepilogo.** La pagina è un wizard: prima si sceglie la prova — range con
+minimo e massimo, durata, tempo per bersaglio, tetto ai colpi, sequenza casuale, da preset o dalla
+lista della maestra — e solo dopo compare il rigo. Il rigo mostra un bersaglio alla volta, nella chiave
+che lascia la nota più vicina al rigo, ascolta il pianoforte dal microfono e risponde subito: verde
+sulla nota giusta, rosso sulla sbagliata, e quando l'ottava è incerta non giudica — chiede di
+ripetere. Otto secondi per bersaglio, pausa, e la sessione che si chiude da sola a tempo scaduto o a
+lista esaurita. A fine sessione i tre conteggi, le note al minuto e le note da rivedere, scritte sul
+rigo con la loro chiave.
+Mancano il soundcheck, l'editor della lista, la classifica, il log e la PWA offline.
+
+## La prova si può dettare dall'URL
+
+Un link può impostare la prova al posto della schermata di configurazione, che in quel caso non
+compare; i parametri che non ci sono restano ai default.
+
+| parametro | valori | default |
+| --- | --- | --- |
+| `range` | `base` (Do3–Do5), `advanced` (Si1–Re6) | `base` |
+| `lowest`, `highest` | numero MIDI, estremi inclusi; correggono il preset | Do3, Do5 |
+| `duration` | secondi di sessione | `60` |
+| `timeout` | secondi per bersaglio | `8` |
+| `cap` | colpi errati che chiudono un bersaglio; assente o minore di 1 = nessun tetto | assente |
+| `mode` | `random`, `preset`, `list` | `random` |
+| `preset` | `prime-note`, `rigo-di-basso`, `due-chiavi`; un id che non esiste ricade su `prime-note` | `prime-note` |
+
+```text
+https://…/?range=advanced&duration=120&timeout=6
+https://…/?mode=preset&preset=due-chiavi&duration=90
+```
+
+Un link non fa partire la sessione: il microfono vuole un gesto, quindi si atterra sul rigo con
+«Inizia» davanti. `?autostart=1` è l'eccezione, ed è una scorciatoia di misura per un browser senza
+testa con un microfono finto; salta anche la configurazione. Le decisioni stanno in
+[0011](docs/adr/0011-la-prova-dettata-dall-url.md).
 
 ## Come si lavora
 
@@ -91,21 +120,32 @@ attacco → verdetto < 400 ms. Il registro grave (A0-B2) si misura e si riporta,
 - [0001](docs/adr/0001-ascolto-solo-microfono.md) — solo microfono, niente MIDI.
 - [0002](docs/adr/0002-pwa-statica-senza-backend.md) — PWA statica, classifica sul dispositivo.
 - [0003](docs/adr/0003-verdetto-per-modo-di-avanzamento.md) — centrata / sbagliata / saltata.
+- [0004](docs/adr/0004-rilevatore-dopo-il-primo-spike.md) — il rilevatore dopo il primo spike.
+- [0005](docs/adr/0005-la-parabola-e-la-risonanza.md) — la parabola e la risonanza.
+- [0006](docs/adr/0006-leggere-dopo-l-attacco.md) — leggere dopo l'attacco.
+- [0007](docs/adr/0007-il-quarto-giro.md) — il quarto giro di misura.
+- [0008](docs/adr/0008-il-colpo-ambiguo.md) — il colpo ambiguo non si giudica.
+- [0009](docs/adr/0009-le-parziali-dispari.md) — le parziali dispari e l'ottava.
+- [0010](docs/adr/0010-il-feedback-e-il-silenzio.md) — il feedback, il silenzio, la pausa.
+- [0011](docs/adr/0011-la-prova-dettata-dall-url.md) — il wizard della prova e l'URL che lo salta.
 
 ## Cosa non è ancora verificato
 
 - **L'acustica.** I test coprono l'aritmetica del rilevatore su segnali sintetici. Nessun pianoforte
   vero è ancora passato dal microfono di un telefono vero: è esattamente ciò che lo spike deve
   misurare, e finché non è misurato non ci sono stime di tempi.
-- **La grafica del rigo oltre il caso di prova.** VexFlow 5 disegna due righi in `index.html`; il
-  passaggio da "una nota" a "il bersaglio giusto, nella chiave giusta" è ancora da fare.
+- **Il rigo in mano a un ragazzo.** La grafica è verificata in un browser senza testa a 390×844: non
+  su un telefono vero, alla luce di una stanza, con le dita di chi suona.
 
 ## Com'è fatto il repository
 
 ```
-src/audio/      il rilevatore: FFT, somma armonica, attacchi (testato, senza DOM)
+src/audio/      il rilevatore: FFT, somma armonica, attacchi; microfono e tono (senza logica)
+src/exercise/   il motore dell'esercizio, il riepilogo, le impostazioni della prova (senza DOM)
+src/score/      la mappa tasto → rigo, la geometria del foglio, VexFlow
+src/session/    la macchina a stati della sessione (senza DOM né audio)
 src/spike/      la pagina di misura
-tests/          i test del rilevatore, con segnali sintetici
+tests/          i test del rilevatore, del motore, della mappa e della prova
 scripts/        serve-tls.mjs, il server https usa-e-getta per il telefono
 docs/adr/       le decisioni
 ```

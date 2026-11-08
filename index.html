@@ -90,6 +90,15 @@
       }
       select:disabled, input:disabled { opacity: 0.5; }
       .hint { color: var(--warn); font-size: 14px; margin: 12px 0 0; }
+      /* The wizard moves between screens: one at a time, with a short rise. */
+      @keyframes screen-in {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: none; }
+      }
+      .screen-in { animation: screen-in 240ms ease-out; }
+      @media (prefers-reduced-motion: reduce) {
+        .screen-in { animation: none; }
+      }
 
       details { color: var(--dim); font-size: 14px; }
       summary { cursor: pointer; padding: 6px 2px; }
@@ -105,7 +114,7 @@
         <p class="lead">Leggi la nota sul rigo, poi suonala sul pianoforte.</p>
       </header>
 
-      <section class="card" id="settings">
+      <section class="card" id="setup">
         <h2>La prova</h2>
 
         <fieldset>
@@ -139,15 +148,17 @@
         </fieldset>
 
         <p id="settings-hint" class="hint" role="status" hidden></p>
+        <button id="begin" type="button">Comincia</button>
       </section>
 
-      <section class="card" id="exercise">
+      <section class="card" id="exercise" hidden>
         <!-- One target and nothing else on the staff: the whole question. -->
         <div id="target" class="sheet" role="img" aria-label="Un rigo con una nota da leggere"></div>
         <p id="status" class="status">Premi Inizia, poi suona la nota che vedi.</p>
         <p id="message" class="message" role="status" hidden></p>
         <button id="start" type="button">Inizia</button>
         <button id="pause" type="button" class="ghost" hidden>Pausa</button>
+        <button id="back" type="button" class="ghost">Cambia la prova</button>
       </section>
 
       <section class="card" id="summary" hidden>
