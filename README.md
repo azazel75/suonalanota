@@ -12,8 +12,9 @@ che lascia la nota più vicina al rigo, ascolta il pianoforte dal microfono e ri
 sulla nota giusta, rosso sulla sbagliata, e quando l'ottava è incerta non giudica — chiede di
 ripetere. Otto secondi per bersaglio, pausa, e la sessione che si chiude da sola a tempo scaduto o a
 lista esaurita. A fine sessione i tre conteggi, le note al minuto e le note da rivedere, scritte sul
-rigo con la loro chiave.
-Mancano il soundcheck, l'editor della lista, la classifica, il log e la PWA offline.
+rigo con la loro chiave. La lista della maestra si compone toccando i tasti di una tastiera, si esporta
+e si importa come file JSON, e resta sul telefono fra una lezione e l'altra.
+Mancano il soundcheck, la classifica e la PWA offline.
 
 ## La prova si può dettare dall'URL
 
@@ -39,6 +40,50 @@ Un link non fa partire la sessione: il microfono vuole un gesto, quindi si atter
 «Inizia» davanti. `?autostart=1` è l'eccezione, ed è una scorciatoia di misura per un browser senza
 testa con un microfono finto; salta anche la configurazione. Le decisioni stanno in
 [0011](docs/adr/0011-la-prova-dettata-dall-url.md).
+
+## La lista della maestra
+
+Con la modalità `list` la prova chiede i tasti che la maestra ha scelto, nell'ordine in cui li ha
+toccati. La tastiera mostra un'ottava per riga — sette tasti bianchi di fila, i neri sopra le fessure —
+perché a 390 px un dito trova ancora il tasto; un tasto scelto porta il numero del suo posto.
+
+La lista resta sul telefono (`localStorage`, chiave `suona-la-nota.lista`): sopravvive a un
+ricaricamento e alla chiusura del browser, ma non passa a un altro telefono — per quello c'è il file.
+«Esporta la lista» scarica `lista-della-maestra.json`; «Importa una lista» rilegge lo stesso formato:
+
+```json
+{
+  "versione": 1,
+  "tasti": [60, 62, 64]
+}
+```
+
+`tasti` sono numeri MIDI, nell'ordine in cui vanno chiesti. Un tasto fuori dai 88 del pianoforte
+(21–108) viene segnalato e lasciato fuori; un file che non è quello — un altro JSON, o una versione che
+l'applicazione non conosce — viene rifiutato con una frase in italiano, e la lista di prima resta. I
+tasti della lista fuori dal range attivo restano nella lista ma non vengono chiesti: una riga sotto la
+tastiera dice quanti sono.
+
+## Il log della sessione
+
+A fine sessione il riepilogo offre **«Scarica il log»**: un file JSON indentato, con i nomi dei campi
+in italiano, che si apre e si legge senza strumenti. Si chiama
+`suona-la-nota-log-AAAA-MM-GG-HHMMSS.json` e contiene:
+
+- le **impostazioni in vigore** (range, durata, tempo per bersaglio, tetto, modalità, preset);
+- i **bersagli** che la sessione ha chiesto, in ordine, col tasto, il nome, il verdetto, i millisecondi
+  e i **colpi** sentiti mentre quel bersaglio era a schermo: altezza, frequenza, credibilità, livello,
+  margini sul secondo classificato e sull'ottava, stabilità, istante;
+- il **soundcheck**: oggi `range_misurato: false` e `range_effettivo: null`, perché il soundcheck non
+  c'è ancora — il file dice che il range non è stato misurato invece di fingere che lo sia. Quando il
+  soundcheck arriverà, `range_effettivo` conterrà il range misurato;
+- la **fine** (tempo scaduto o lista esaurita) e il **punteggio**.
+
+Un colpo che il rilevatore non ha potuto giudicare è segnato `ambiguo: true` e non conta come errore.
+Quello che non è stato misurato vale `null`, mai un numero inventato. Il bersaglio ancora a schermo
+quando la sessione finisce non entra nel log, come non entra nei conteggi (ADR 0003). Il log c'è anche
+quando la sessione non ha chiuso nessun bersaglio: impostazioni e punteggio sono ancora evidenza. I due
+formati sono decisi in [0012](docs/adr/0012-i-due-file.md).
 
 ## Come si lavora
 
@@ -128,6 +173,7 @@ attacco → verdetto < 400 ms. Il registro grave (A0-B2) si misura e si riporta,
 - [0009](docs/adr/0009-le-parziali-dispari.md) — le parziali dispari e l'ottava.
 - [0010](docs/adr/0010-il-feedback-e-il-silenzio.md) — il feedback, il silenzio, la pausa.
 - [0011](docs/adr/0011-la-prova-dettata-dall-url.md) — il wizard della prova e l'URL che lo salta.
+- [0012](docs/adr/0012-i-due-file.md) — i due file JSON: la lista della maestra e il log.
 
 ## Cosa non è ancora verificato
 
@@ -141,11 +187,11 @@ attacco → verdetto < 400 ms. Il registro grave (A0-B2) si misura e si riporta,
 
 ```
 src/audio/      il rilevatore: FFT, somma armonica, attacchi; microfono e tono (senza logica)
-src/exercise/   il motore dell'esercizio, il riepilogo, le impostazioni della prova (senza DOM)
+src/exercise/   il motore dell'esercizio, il riepilogo, le impostazioni e la lista della maestra (senza DOM)
 src/score/      la mappa tasto → rigo, la geometria del foglio, VexFlow
-src/session/    la macchina a stati della sessione (senza DOM né audio)
+src/session/    la macchina a stati della sessione e il log scaricabile (senza DOM né audio)
 src/spike/      la pagina di misura
-tests/          i test del rilevatore, del motore, della mappa e della prova
+tests/          i test del rilevatore, del motore, della mappa, della prova, della lista e del log
 scripts/        serve-tls.mjs, il server https usa-e-getta per il telefono
 docs/adr/       le decisioni
 ```

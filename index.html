@@ -53,6 +53,9 @@
       .notes { display: grid; gap: 10px; margin: 2px 0 16px; }
       .notes .mini { display: flex; justify-content: center; padding: 4px; border-radius: 10px; }
       #summary h2 + p { margin-top: 0; }
+      /* The log is what the session leaves for the teacher: a line that says so, then the ghost button. */
+      .log-note { color: var(--dim); font-size: 14px; margin: 20px 0 8px; }
+      #log { margin-top: 0; }
       #restart { margin-top: 6px; }
 
       button {
@@ -90,6 +93,66 @@
       }
       select:disabled, input:disabled { opacity: 0.5; }
       .hint { color: var(--warn); font-size: 14px; margin: 12px 0 0; }
+
+      /* The teacher's list: one keyboard per octave, so that at 390 px a finger still hits a key. */
+      #list-field { margin-top: 12px; }
+      .keyboard { display: grid; gap: 6px; margin: 4px 0 10px; }
+      .octave { position: relative; display: flex; height: 92px; }
+      .key {
+        padding: 0 0 6px;
+        border: 1px solid #c9c2b4;
+        border-radius: 8px;
+        background: var(--paper);
+        color: #06121f;
+        font: inherit;
+        font-size: 11px;
+        font-weight: 600;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 2px;
+        touch-action: manipulation;
+      }
+      .key.white, .key.lone { flex: 0 0 auto; min-width: 0; min-height: 44px; }
+      /* A range that begins on a black key: one dark key, no white one under it. */
+      .key.lone { background: #10161d; border-color: #000; color: var(--text); }
+      .key.black {
+        position: absolute;
+        top: 0;
+        height: 56%;
+        min-height: 44px;
+        z-index: 2;
+        background: #10161d;
+        border-color: #000;
+        color: var(--text);
+      }
+      /* A black key is a third narrower than a white one, and a finger is not:
+         the hit area reaches past the painted key without touching its neighbour. */
+      .key.black::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: -6px;
+        right: -6px;
+      }
+      .key.ticked { background: var(--accent); border-color: var(--accent); color: #06121f; }
+      /* The order the teacher ticked the keys in: a number, because the sequence is the point. */
+      .key .order {
+        min-width: 18px;
+        padding: 0 4px;
+        border-radius: 9px;
+        background: #06121f;
+        color: var(--accent);
+        font-size: 11px;
+        line-height: 18px;
+      }
+      #list-count { color: var(--dim); font-size: 14px; margin: 0 0 12px; }
+      #list-message { color: var(--dim); font-size: 14px; margin: 0 0 10px; }
+      #list-message.bad { color: var(--warn); font-weight: 600; }
+      .list-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+      .list-actions button { flex: 1 1 140px; min-height: 44px; font-size: 15px; margin-top: 0; }
       /* The wizard moves between screens: one at a time, with a short rise. */
       @keyframes screen-in {
         from { opacity: 0; transform: translateY(10px); }
@@ -145,6 +208,17 @@
           <label class="choice"><input type="radio" name="mode" value="preset" /> da un preset progressivo</label>
           <label class="choice"><input type="radio" name="mode" value="list" /> dalla lista della maestra</label>
           <label class="field" id="preset-field" hidden><select id="preset" aria-label="progressione"></select></label>
+
+          <div id="list-field" hidden>
+            <div id="keyboard" class="keyboard" role="group" aria-label="I tasti della lista della maestra"></div>
+            <p id="list-count"></p>
+            <p id="list-message" role="status" hidden></p>
+            <div class="list-actions">
+              <button id="list-export" type="button" class="ghost">Esporta la lista</button>
+              <button id="list-import" type="button" class="ghost">Importa una lista</button>
+            </div>
+            <input id="list-file" type="file" accept="application/json,.json" hidden />
+          </div>
         </fieldset>
 
         <p id="settings-hint" class="hint" role="status" hidden></p>
@@ -175,6 +249,11 @@
         <div id="skipped-group" hidden>
           <h2>Saltate</h2>
           <div id="skipped-notes" class="notes"></div>
+        </div>
+
+        <div id="log-group" hidden>
+          <p class="log-note">Il log della sessione: cosa è stato chiesto, cosa il microfono ha sentito, cosa ha deciso l'applicazione.</p>
+          <button id="log" type="button" class="ghost">Scarica il log</button>
         </div>
 
         <button id="restart" type="button">Torna all'inizio</button>

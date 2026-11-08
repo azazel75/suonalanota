@@ -15,6 +15,9 @@
  * docs/adr/0011): then the configuration screen is skipped, because the link
  * already answered the question it would ask.
  *
+ * The summary hands over the log of the session: the file is built once, when the
+ * session ends, by ../session/log, and the button only makes it a download.
+ *
  * Four decisions live here because they are about the browser and not about
  * the exercise:
  *
@@ -26,12 +29,23 @@
  *  - a tab that is not watched is not a session being played, so going to the
  *    background pauses it instead of burning a minute of targets;
  *  - the screens move with a short rise, and not at all for those who asked
- *    the system for less motion.
+ *    the system for less motion;
+ *  - the teacher's list is remembered in the browser and nowhere else: it is
+ *    the one part of the trial that outlives the page (ADR 0011), because a
+ *    maestra composes it once and the allievo must find it there tomorrow.
  */
 import { createListener } from './audio/listener';
 import { openAudioInput, type AudioInput } from './audio/microphone';
-import { midiToItalian, pianoKeys } from './audio/notes';
+import { midiToItalian, pianoKeys, pitchClass } from './audio/notes';
 import { createExercise, type Exercise } from './exercise/controller';
+import {
+  listFromJson,
+  listToJson,
+  loadList,
+  saveList,
+  toggleKey,
+  type StoragePort,
+} from './exercise/list';
 import {
   DEFAULT_SETTINGS,
   PRESETS,
@@ -48,8 +62,16 @@ import {
 import { summarise, type SummarySeries } from './exercise/summary';
 import { seriesSheet } from './score/layout';
 import { drawNotes, drawTarget } from './score/sheet';
-import { ADVANCED_RANGE, BASE_RANGE, keysInRange, nearestPlacement, type KeyRange } from './score/staff';
+import {
+  ADVANCED_RANGE,
+  BASE_RANGE,
+  isInRange,
+  keysInRange,
+  nearestPlacement,
+  type KeyRange,
+} from './score/staff';
 import type { EndReason, SessionState, Verdict } from './session/engine';
+import { logFileName, logJson, sessionLog } from './session/log';
 
 /**
  * Below this credibility a colpo is noise and does not enter the exercise.
@@ -96,21 +118,60 @@ const wrongGroup = element<HTMLElement>('wrong-group');
 const wrongNotes = element<HTMLDivElement>('wrong-notes');
 const skippedGroup = element<HTMLElement>('skipped-group');
 const skippedNotes = element<HTMLDivElement>('skipped-notes');
+const logGroup = element<HTMLElement>('log-group');
+const logButton = element<HTMLButtonElement>('log');
 const rangeInputs = Array.from(document.querySelectorAll<HTMLInputElement>('input[name="range"]'));
 const modeInputs = Array.from(document.querySelectorAll<HTMLInputElement>('input[name="mode"]'));
+const listField = element<HTMLElement>('list-field');
+const keyboard = element<HTMLDivElement>('keyboard');
+const listCount = element<HTMLParagraphElement>('list-count');
+const listMessage = element<HTMLParagraphElement>('list-message');
+const listExport = element<HTMLButtonElement>('list-export');
+const listImport = element<HTMLButtonElement>('list-import');
+const listFile = element<HTMLInputElement>('list-file');
+
+/** The name of the file a teacher keeps and hands to another phone. */
+const LIST_FILE_NAME = 'lista-della-maestra.json';
+
+/** The twelve pitch classes as the keyboard draws them: the sharps are the black keys. */
+const BLACK_KEY_PITCH_CLASSES = new Set([1, 3, 6, 8, 10]);
+
+/** A row of the keyboard starts on a C, the only key that has no black key before it. */
+const C_PITCH_CLASS = 0;
+
+/** The white keys of an octave, and the width of a row that holds them at a phone's size. */
+const OCTAVE_WHITES = 7;
+
+/** The browser's storage, or `null` when it refuses to be read at all. */
+function browserStorage(): StoragePort | null {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
 
 /**
- * The list the teacher composes. Empty in this round: the screen that fills it
- * is ticket 07, and until then the mode says so instead of playing nothing.
+ * The list the teacher composes, in the order she ticked it: read back at
+ * startup and written on every change, so a lesson prepared yesterday is still
+ * on the phone today.
  */
-const teacherList: readonly number[] = [];
+let teacherList: readonly number[] = loadList(browserStorage());
+
+/** The range the keyboard on screen was built for: a change of range rebuilds it. */
+let drawnRange: KeyRange | null = null;
 
 interface Running {
   audio: AudioInput;
   exercise: Exercise;
+  /** The trial in force, kept for the log: the controls may have moved since. */
+  settings: Settings;
   /** Until this instant the colpi the microphone hears are the beep coming back. */
   muteUntil: number;
 }
+
+/** The file the summary hands over, built the once, when the session ends. */
+let downloadable: { readonly name: string; readonly text: string } | null = null;
 
 let running: Running | null = null;
 /** True from the click to the microphone being open: a second click must not start a second session. */
@@ -167,6 +228,165 @@ function chosenSettings(): Settings {
 }
 
 /**
+ * The keys of a range grouped by octave, each row starting at a C. Seven white
+ * keys across are what fits a 390 px phone with a finger-sized target on each;
+ * one keyboard per octave keeps the map readable where a single run would
+ * shrink the keys below what a child can hit.
+ */
+function octaveRows(range: KeyRange): number[][] {
+  const rows: number[][] = [];
+  for (const midi of keysInRange(range)) {
+    if (rows.length === 0 || pitchClass(midi) === C_PITCH_CLASS) rows.push([]);
+    rows[rows.length - 1].push(midi);
+  }
+  return rows;
+}
+
+/** Ticked or not, with its place in the list: the order is what the list is for. */
+function paintKey(button: HTMLButtonElement, midi: number): void {
+  const place = teacherList.indexOf(midi) + 1;
+  const name = midiToItalian(midi);
+  button.classList.toggle('ticked', place > 0);
+  button.setAttribute('aria-pressed', String(place > 0));
+  button.setAttribute('aria-label', place > 0 ? `${name}, ${place}° nella lista` : name);
+  button.replaceChildren();
+  if (!button.classList.contains('black')) button.append(name);
+  if (place > 0) {
+    const order = document.createElement('span');
+    order.className = 'order';
+    order.textContent = String(place);
+    button.append(order);
+  }
+}
+
+/** The keyboard of the range in force: white keys in a row, black keys on the gaps between them. */
+function drawKeyboard(range: KeyRange): void {
+  keyboard.replaceChildren();
+  for (const row of octaveRows(range)) {
+    const octave = document.createElement('div');
+    octave.className = 'octave';
+    // A row keeps the width of a full octave even when the range cuts it short,
+    // so that a key is as wide in the first row as in the last.
+    const share = 100 / OCTAVE_WHITES;
+    let placed = 0;
+    for (const midi of row) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      const white = !BLACK_KEY_PITCH_CLASSES.has(pitchClass(midi));
+      button.dataset.key = String(midi);
+      if (white) {
+        button.className = 'key white';
+        button.style.width = `${share}%`;
+        placed++;
+      } else if (placed === 0) {
+        // A range that begins on a black key has no white key to stand on: the
+        // key stands on its own, at the width of a white one.
+        button.className = 'key lone';
+        button.style.width = `${share}%`;
+      } else {
+        button.className = 'key black';
+        // A black key sits on the boundary between two white ones, half of it
+        // over each; a row that begins on a black key keeps it inside the row
+        // instead of letting half of it hang off the edge.
+        const width = share * 0.62;
+        button.style.width = `${width}%`;
+        button.style.left = `${Math.min(100 - width, Math.max(0, placed * share - width / 2))}%`;
+      }
+      paintKey(button, midi);
+      octave.append(button);
+    }
+    keyboard.append(octave);
+  }
+  drawnRange = range;
+}
+
+/** A rebuild after a tick, with the focus put back on the key just touched. */
+function redrawKeyboard(): void {
+  const focused = document.activeElement;
+  const key = focused instanceof HTMLElement ? focused.dataset.key : undefined;
+  drawKeyboard(chosenRange());
+  if (key !== undefined) {
+    keyboard.querySelector<HTMLButtonElement>(`button[data-key="${key}"]`)?.focus();
+  }
+}
+
+/** How many keys the list holds, and how many of them the range in force will not ask for. */
+function describeList(range: KeyRange): string {
+  if (teacherList.length === 0) {
+    return 'La lista è vuota: tocca i tasti per scegliere le note da chiedere.';
+  }
+  const parts = [`${count(teacherList.length, 'tasto', 'tasti')} nella lista.`];
+  const outside = teacherList.filter((key) => !isInRange(key, range)).length;
+  if (outside === 1) parts.push('Un tasto è fuori dal range attivo: non verrà chiesto.');
+  else if (outside > 1) parts.push(`${outside} tasti sono fuori dal range attivo: non verranno chiesti.`);
+  return parts.join(' ');
+}
+
+/** One line under the keyboard, for what an import had to say. */
+function showListMessage(text: string, bad: boolean): void {
+  listMessage.textContent = text;
+  listMessage.classList.toggle('bad', bad);
+  listMessage.hidden = false;
+}
+
+/** A tick on the keyboard: the list, its memory and the trial that will be played. */
+function tickKey(midi: number): void {
+  teacherList = toggleKey(teacherList, midi);
+  saveList(browserStorage(), teacherList);
+  redrawKeyboard();
+  if (running === null && !starting) refreshSettings();
+}
+
+/** The list as a file the teacher can keep, mail, or open on another phone. */
+function exportList(): void {
+  saveFile(LIST_FILE_NAME, listToJson(teacherList), 'application/json');
+  showListMessage(
+    teacherList.length === 0
+      ? 'La lista è vuota: il file appena scaricato non contiene tasti.'
+      : `Esportati ${count(teacherList.length, 'tasto', 'tasti')}.`,
+    false,
+  );
+}
+
+/**
+ * The list as it arrives from a file: the keys of the file replace the list,
+ * the ones off the piano are reported and left out, and a file that is not ours
+ * is a sentence, not a broken screen.
+ */
+async function importList(file: File): Promise<void> {
+  let text: string;
+  try {
+    text = await file.text();
+  } catch {
+    showListMessage('Il file non si è potuto leggere: riprova a sceglierlo.', true);
+    return;
+  }
+
+  const read = listFromJson(text);
+  if (read.kind === 'invalid') {
+    showListMessage(read.message, true);
+    return;
+  }
+
+  teacherList = read.keys;
+  saveList(browserStorage(), teacherList);
+  redrawKeyboard();
+  if (running === null && !starting) refreshSettings();
+
+  const parts = [
+    read.keys.length === 0
+      ? 'Il file non conteneva tasti: la lista è vuota.'
+      : `Lista importata: ${count(read.keys.length, 'tasto', 'tasti')}.`,
+  ];
+  if (read.rejected.length === 1) {
+    parts.push('Un tasto non è sul pianoforte: è rimasto fuori.');
+  } else if (read.rejected.length > 1) {
+    parts.push(`${read.rejected.length} tasti non sono sul pianoforte: sono rimasti fuori.`);
+  }
+  showListMessage(parts.join(' '), read.rejected.length > 0);
+}
+
+/**
  * The trial cannot start with no targets: say why instead of starting nothing,
  * and answer with it. The controls get back what the trial will actually use,
  * so the screen never promises a clock or a cap the session does not apply.
@@ -183,6 +403,15 @@ function refreshSettings(): string | null {
   beginButton.disabled = problem !== null;
   startButton.disabled = starting || problem !== null;
   presetField.hidden = settings.mode !== 'preset';
+  listField.hidden = settings.mode !== 'list';
+  if (
+    drawnRange === null ||
+    drawnRange.lowest !== settings.range.lowest ||
+    drawnRange.highest !== settings.range.highest
+  ) {
+    drawKeyboard(settings.range);
+  }
+  listCount.textContent = describeList(settings.range);
   return problem;
 }
 
@@ -227,6 +456,32 @@ function showScreen(name: ScreenName): void {
   shown.classList.add('screen-in');
 }
 
+/**
+ * Hand a file over: a Blob, a link the page clicks for it, and the object URL
+ * revoked once the browser has had time to start the download. One function for
+ * both files the page produces, because the timing of that revoke is not a
+ * detail to get right twice.
+ */
+function saveFile(name: string, text: string, type: string): void {
+  const blob = new Blob([text], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = name;
+  link.rel = 'noopener';
+  document.body.append(link);
+  link.click();
+  link.remove();
+  // Revoking at once cuts the download off on some browsers; a second is enough.
+  window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+}
+
+/** The log the summary hands over, built once, when the session ends. */
+function downloadLog(): void {
+  if (downloadable === null) return;
+  saveFile(downloadable.name, downloadable.text, 'application/json');
+}
+
 /** The exercise screen, ready: the trial on the staff, and the button that opens the microphone. */
 function showExerciseScreen(): void {
   showScreen('exercise');
@@ -243,6 +498,9 @@ function showExerciseScreen(): void {
 /** Back to the configuration, with the same values, without starting anything. */
 function backToSetup(): void {
   if (running !== null || starting) return;
+  // The log of the session just played is not the log of the next one.
+  downloadable = null;
+  logGroup.hidden = true;
   showScreen('setup');
   pauseButton.hidden = true;
   startButton.hidden = false;
@@ -336,6 +594,22 @@ function finish(reason: EndReason, state: SessionState): void {
   wrongGroup.hidden = summary.wrongNotes.length === 0;
   skippedGroup.hidden = summary.skippedNotes.length === 0;
 
+  // The log is written now, from the state the summary is showing and from what
+  // the exercise heard: after this instant the page forgets the session, and the
+  // file is all that is left of it.
+  const when = new Date();
+  const targets = current === null ? [] : current.exercise.log();
+  // Even a session that closed no bersaglio has a log: the settings in force and
+  // the score are evidence too, and "no log at all" would be the one answer the
+  // teacher cannot read.
+  downloadable = current === null
+    ? null
+    : {
+        name: logFileName(when),
+        text: logJson(sessionLog({ when, settings: current.settings, state, targets })),
+      };
+  logGroup.hidden = downloadable === null;
+
   showScreen('summary');
   pauseButton.hidden = true;
   showMessage(null);
@@ -408,7 +682,7 @@ async function startSession(): Promise<void> {
     },
   });
 
-  running = { audio, exercise, muteUntil: 0 };
+  running = { audio, exercise, settings, muteUntil: 0 };
   starting = false;
 
   // Nothing to touch while the trial runs, and the staff gets the screen.
@@ -453,6 +727,7 @@ async function main(): Promise<void> {
   beginButton.addEventListener('click', showExerciseScreen);
   backButton.addEventListener('click', backToSetup);
   restartButton.addEventListener('click', backToSetup);
+  logButton.addEventListener('click', downloadLog);
   pauseButton.addEventListener('click', togglePause);
   capInput.addEventListener('change', () => {
     limitInput.disabled = !capInput.checked;
@@ -485,6 +760,24 @@ async function main(): Promise<void> {
   }
   presetSelect.addEventListener('change', () => {
     if (running === null && !starting) refreshSettings();
+  });
+
+  // The keyboard, and the file a list travels in: both live on the setup
+  // screen only, and neither is reachable while a session is being built.
+  keyboard.addEventListener('click', (event) => {
+    const button = event.target instanceof Element
+      ? event.target.closest<HTMLButtonElement>('button[data-key]')
+      : null;
+    if (button === null || running !== null || starting) return;
+    tickKey(Number(button.dataset.key));
+  });
+  listExport.addEventListener('click', exportList);
+  listImport.addEventListener('click', () => listFile.click());
+  listFile.addEventListener('change', () => {
+    const file = listFile.files?.[0];
+    // Clearing the field lets the same file be chosen again after a fix.
+    listFile.value = '';
+    if (file !== undefined) void importList(file);
   });
 
   document.addEventListener('visibilitychange', () => {

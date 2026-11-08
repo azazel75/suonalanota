@@ -207,13 +207,22 @@ const NOTHING_TO_ASK: Readonly<Record<SequenceMode, string>> = {
   list: 'La lista è vuota: nessuna nota da chiedere.',
 };
 
+/** The list has keys, but not one of them is in the range in force. */
+const LIST_OUTSIDE_RANGE = 'Nessun tasto della lista è nel range scelto.';
+
 /**
  * Why this trial cannot start, or `null` when it can. The page asks before
  * opening the microphone: a session without targets would be over before the
  * allievo sees the first note, and the summary would blame nobody.
+ *
+ * A list that is not empty but has nothing in the range is not an empty list,
+ * and saying so would contradict the line under the keyboard that counts the
+ * keys left outside.
  */
 export function problemWith(settings: Settings): string | null {
-  return targetsOf(settings).length === 0 ? NOTHING_TO_ASK[settings.mode] : null;
+  if (targetsOf(settings).length > 0) return null;
+  if (settings.mode === 'list' && settings.list.length > 0) return LIST_OUTSIDE_RANGE;
+  return NOTHING_TO_ASK[settings.mode];
 }
 
 /** The parameters a URL may use to dictate the trial, all optional. */

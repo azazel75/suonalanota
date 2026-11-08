@@ -133,6 +133,13 @@ describe('the settings of the trial', () => {
     expect(sequenceFor(withList)).toEqual([64, 62, 60]);
     expect(problemWith({ ...withList, list: [] })).toContain('lista');
   });
+
+  it('does not call a list empty when it is only out of the range in force', () => {
+    const outside = settings({ mode: 'list', list: [90, 91], range: { lowest: 48, highest: 72 } });
+
+    expect(problemWith(outside)).toContain('range');
+    expect(problemWith(outside)).not.toContain('vuota');
+  });
 });
 
 describe('the trial from the URL', () => {
