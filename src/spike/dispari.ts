@@ -12,7 +12,7 @@
  * early enough that the odd partials have not decayed away yet.
  */
 import { partialProfile } from '../audio/profile';
-import { runProbe } from './probe';
+import { OCTAVE_PROBE_NOTES, runProbe } from './probe';
 
 function round(value: number, digits = 3): number {
   const factor = Math.pow(10, digits);
@@ -21,6 +21,7 @@ function round(value: number, digits = 3): number {
 
 runProbe({
   name: 'dispari',
+  notes: OCTAVE_PROBE_NOTES,
   columns: [
     ['oddEvenLower', 'disp/pari grave'],
     ['oddEvenWinner', 'disp/pari acuta'],

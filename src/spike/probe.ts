@@ -33,9 +33,28 @@ export interface ProbeInput {
   series: Float32Array[];
 }
 
+/**
+ * The notes the octave probes are run on: **both** members of every pair where the
+ * octave was contested in the measurements, plus two controls where the detector
+ * is already sure. One member of a pair gives one class of data, and a
+ * discriminant that always answers "resonance" would look perfect on it.
+ */
+export const OCTAVE_PROBE_NOTES: number[] = [
+  35, 47, // Si1 / Si2
+  36, 48, // Do2 / Do3
+  38, 50, // Re2 / Re3
+  60, 72, // Do4 / Do5
+  65, 77, // Fa4 / Fa5
+  67, 79, // Sol4 / Sol5
+  68, 80, // Sol#4 / Sol#5
+  57, 69, // La3 / La4, the controls
+];
+
 export interface ProbeDefinition {
   /** Written into the JSON: it is how the two files are told apart. */
   name: string;
+  /** The notes offered in the picker. Defaults to the whole keyboard. */
+  notes?: number[];
   /** Columns of the table, as [key shown in the row, label]. */
   columns: [string, string][];
   measure(input: ProbeInput): Record<string, unknown>;
@@ -89,7 +108,9 @@ export function runProbe(definition: ProbeDefinition): void {
   let capture: Float32Array[] | null = null;
   const onset = createOnsetDetector();
 
-  for (const midi of pianoKeys()) {
+  // Only the notes of the protocol, so that a wrong pick cannot happen while
+  // playing: the picker is part of the measurement.
+  for (const midi of definition.notes ?? pianoKeys()) {
     const option = document.createElement('option');
     option.value = String(midi);
     option.textContent = midiToLabel(midi);

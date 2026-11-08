@@ -13,7 +13,7 @@
  */
 import { bandEnergy, halfRiseMs, riseDelayMs } from '../audio/profile';
 import { midiToHz } from '../audio/notes';
-import { runProbe } from './probe';
+import { OCTAVE_PROBE_NOTES, runProbe } from './probe';
 
 const HOP_MS = 20;
 
@@ -24,6 +24,7 @@ function round(value: number, digits = 3): number {
 
 runProbe({
   name: 'salita',
+  notes: OCTAVE_PROBE_NOTES,
   columns: [
     ['riseDelayMs', 'ritardo grave (ms)'],
     ['lowerRiseMs', 'salita grave'],
