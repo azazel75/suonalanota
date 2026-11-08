@@ -6,8 +6,10 @@
  *
  * The page is the wiring, nothing else: it owns the DOM, the microphone and the
  * clock, and hands them to the exercise in ../exercise, which owns the rules.
+ * The trial itself — range, clocks, cap, sequence — is ../exercise/settings, so
+ * the controls here only read and write what that module already knows.
  *
- * Three decisions live here because they are about the browser and not about
+ * Four decisions live here because they are about the browser and not about
  * the exercise:
  *
  *  - the microphone is opened on the button, because that is the only gesture
@@ -16,11 +18,26 @@
  *    hundred milliseconds, and the colpi it produces are dropped: they are the
  *    phone talking to itself;
  *  - a tab that is not watched is not a session being played, so going to the
- *    background pauses it instead of burning a minute of targets.
+ *    background pauses it instead of burning a minute of targets;
+ *  - the settings card goes away while a session runs — there is nothing to
+ *    touch, and the staff needs the whole screen — and comes back with the same
+ *    values when the allievo returns to the start.
  */
 import { createListener } from './audio/listener';
 import { openAudioInput, type AudioInput } from './audio/microphone';
+import { midiToItalian, pianoKeys } from './audio/notes';
 import { createExercise, type Exercise } from './exercise/controller';
+import {
+  DEFAULT_SETTINGS,
+  PRESETS,
+  clampRange,
+  normalise,
+  problemWith,
+  sequenceFor,
+  sessionConfigOf,
+  type SequenceMode,
+  type Settings,
+} from './exercise/settings';
 import { summarise, type SummarySeries } from './exercise/summary';
 import { seriesSheet } from './score/layout';
 import { drawNotes, drawTarget } from './score/sheet';
@@ -39,15 +56,22 @@ const BEEP_MUTE_MS = 300;
 /** How long the green or the red stays on the paper. */
 const FLASH_MS = 350;
 
-/** A session lasts a minute unless the page is opened with `?duration=`. */
-const DEFAULT_DURATION_MS = 60_000;
-
 function element<T extends HTMLElement>(id: string): T {
   const found = document.getElementById(id);
   if (found === null) throw new Error(`#${id} is missing from the page`);
   return found as T;
 }
 
+const settingsCard = element<HTMLElement>('settings');
+const lowestSelect = element<HTMLSelectElement>('lowest');
+const highestSelect = element<HTMLSelectElement>('highest');
+const durationInput = element<HTMLInputElement>('duration');
+const timeoutInput = element<HTMLInputElement>('target-timeout');
+const capInput = element<HTMLInputElement>('cap-on');
+const limitInput = element<HTMLInputElement>('wrong-limit');
+const presetSelect = element<HTMLSelectElement>('preset');
+const presetField = element<HTMLElement>('preset-field');
+const settingsHint = element<HTMLParagraphElement>('settings-hint');
 const sheet = element<HTMLDivElement>('target');
 const statusLine = element<HTMLParagraphElement>('status');
 const messageLine = element<HTMLParagraphElement>('message');
@@ -64,6 +88,13 @@ const wrongNotes = element<HTMLDivElement>('wrong-notes');
 const skippedGroup = element<HTMLElement>('skipped-group');
 const skippedNotes = element<HTMLDivElement>('skipped-notes');
 const rangeInputs = Array.from(document.querySelectorAll<HTMLInputElement>('input[name="range"]'));
+const modeInputs = Array.from(document.querySelectorAll<HTMLInputElement>('input[name="mode"]'));
+
+/**
+ * The list the teacher composes. Empty in this round: the screen that fills it
+ * is ticket 07, and until then the mode says so instead of playing nothing.
+ */
+const teacherList: readonly number[] = [];
 
 interface Running {
   audio: AudioInput;
@@ -73,27 +104,82 @@ interface Running {
 }
 
 let running: Running | null = null;
+/** True from the click to the microphone being open: a second click must not start a second session. */
+let starting = false;
 let flashTimer: number | null = null;
 
-function currentRange(): KeyRange {
-  const chosen = rangeInputs.find((input) => input.checked);
-  return chosen?.value === 'advanced' ? ADVANCED_RANGE : BASE_RANGE;
-}
-
-function sessionDurationMs(): number {
-  const asked = new URLSearchParams(window.location.search).get('duration');
-  const seconds = asked === null ? NaN : Number(asked);
-  return Number.isFinite(seconds) && seconds > 0 ? Math.round(seconds * 1000) : DEFAULT_DURATION_MS;
-}
-
-/** The keys of a range, in a random order and without repeats: a session asks each at most once. */
-function randomKeys(range: KeyRange): number[] {
-  const keys = keysInRange(range);
-  for (let index = keys.length - 1; index > 0; index--) {
-    const other = Math.floor(Math.random() * (index + 1));
-    [keys[index], keys[other]] = [keys[other], keys[index]];
+/** One option per piano key, named the way an Italian teacher says it. */
+function fillKeyOptions(select: HTMLSelectElement): void {
+  for (const midi of pianoKeys()) {
+    const option = document.createElement('option');
+    option.value = String(midi);
+    option.textContent = midiToItalian(midi);
+    select.append(option);
   }
-  return keys;
+}
+
+function fillPresetOptions(): void {
+  for (const preset of PRESETS) {
+    const option = document.createElement('option');
+    option.value = preset.id;
+    option.textContent = preset.name;
+    presetSelect.append(option);
+  }
+}
+
+/** The range the two selects say, put back in order and inside the piano. */
+function chosenRange(): KeyRange {
+  return clampRange(Number(lowestSelect.value), Number(highestSelect.value));
+}
+
+/** The controls write the normalised range back, so the screen never lies. */
+function applyRange(range: KeyRange): void {
+  lowestSelect.value = String(range.lowest);
+  highestSelect.value = String(range.highest);
+}
+
+function checkedMode(): SequenceMode {
+  const chosen = modeInputs.find((input) => input.checked)?.value;
+  return chosen === 'preset' || chosen === 'list' ? chosen : DEFAULT_SETTINGS.mode;
+}
+
+/** The trial as the controls have it, with the defaults filled in and the range in order. */
+function chosenSettings(): Settings {
+  return normalise({
+    ...DEFAULT_SETTINGS,
+    range: chosenRange(),
+    durationMs: Number(durationInput.value) * 1000,
+    targetTimeoutMs: Number(timeoutInput.value) * 1000,
+    wrongLimit: capInput.checked ? Number(limitInput.value) : null,
+    mode: checkedMode(),
+    presetId: presetSelect.value,
+    list: teacherList,
+  });
+}
+
+/**
+ * The trial cannot start with no targets: say why instead of starting nothing.
+ * The controls get back what the trial will actually use, so the screen never
+ * promises a clock or a cap the session does not apply.
+ */
+function refreshSettings(): void {
+  const settings = chosenSettings();
+  durationInput.value = String(settings.durationMs / 1000);
+  timeoutInput.value = String(settings.targetTimeoutMs / 1000);
+  if (settings.wrongLimit !== null) limitInput.value = String(settings.wrongLimit);
+
+  const problem = problemWith(settings);
+  settingsHint.textContent = problem ?? '';
+  settingsHint.hidden = problem === null;
+  startButton.disabled = starting || problem !== null;
+  presetField.hidden = settings.mode !== 'preset';
+}
+
+/** Something on the paper before the allievo presses anything, on the chosen range. */
+function drawPreview(): void {
+  if (running !== null || starting) return;
+  const keys = keysInRange(chosenRange());
+  drawTarget(sheet, nearestPlacement(keys[Math.floor(Math.random() * keys.length)]));
 }
 
 function flash(verdict: Verdict): void {
@@ -123,10 +209,6 @@ function showStatus(snapshot: SessionState): void {
   const parts = [`${seconds} s`, `${snapshot.score.centered} centrate`];
   if (snapshot.paused) parts.push('in pausa');
   statusLine.textContent = parts.join(' · ');
-}
-
-function setSettingsEnabled(enabled: boolean): void {
-  for (const input of rangeInputs) input.disabled = !enabled;
 }
 
 /**
@@ -183,36 +265,41 @@ function finish(reason: EndReason, state: SessionState): void {
   summaryCard.hidden = false;
   pauseButton.hidden = true;
   showMessage(null);
-  setSettingsEnabled(true);
 }
 
-/** Back to the exercise screen, without reloading the page. */
+/** Back to the exercise screen, without reloading the page and with the same choices. */
 function backToStart(): void {
   summaryCard.hidden = true;
   exerciseCard.hidden = false;
+  settingsCard.hidden = false;
   pauseButton.hidden = true;
   startButton.hidden = false;
-  startButton.disabled = false;
-  setSettingsEnabled(true);
-
-  const keys = keysInRange(currentRange());
-  drawTarget(sheet, nearestPlacement(keys[Math.floor(Math.random() * keys.length)]));
+  refreshSettings();
+  drawPreview();
   showMessage(null);
   statusLine.textContent = 'Premi Inizia, poi suona la nota che vedi.';
 }
 
 async function startSession(): Promise<void> {
-  if (running !== null) return;
-  const range = currentRange();
+  if (running !== null || starting) return;
+  const settings = chosenSettings();
+  if (problemWith(settings) !== null) {
+    refreshSettings();
+    return;
+  }
 
+  // From here to the open microphone nothing is to be touched: the card goes
+  // away at once, so no change can land on a trial that is already being built.
+  starting = true;
   startButton.disabled = true;
+  settingsCard.hidden = true;
   summaryCard.hidden = true;
   exerciseCard.hidden = false;
   showMessage(null);
 
   const listener = createListener({
-    lowMidi: range.lowest,
-    highMidi: range.highest,
+    lowMidi: settings.range.lowest,
+    highMidi: settings.range.highest,
     minCredibility: MIN_CREDIBILITY,
   });
 
@@ -231,7 +318,9 @@ async function startSession(): Promise<void> {
       });
     });
   } catch (error) {
-    startButton.disabled = false;
+    starting = false;
+    settingsCard.hidden = false;
+    refreshSettings();
     showMessage(
       error instanceof Error && error.name === 'NotAllowedError'
         ? 'Senza il microfono non si può ascoltare: concedilo e riprova.'
@@ -240,9 +329,11 @@ async function startSession(): Promise<void> {
     return;
   }
 
+  // The sequence is drawn once, at the start: the range cannot be exhausted
+  // and refilled behind the allievo's back.
   const exercise = createExercise({
-    keys: randomKeys(range),
-    config: { durationMs: sessionDurationMs() },
+    keys: sequenceFor(settings),
+    config: sessionConfigOf(settings),
     ports: {
       draw: (placement) => drawTarget(sheet, placement),
       flash,
@@ -259,11 +350,12 @@ async function startSession(): Promise<void> {
   });
 
   running = { audio, exercise, muteUntil: 0 };
+  starting = false;
 
+  // Nothing to touch while the trial runs, and the staff gets the screen.
   startButton.hidden = true;
   pauseButton.hidden = false;
   pauseButton.textContent = 'Pausa';
-  setSettingsEnabled(false);
 }
 
 function togglePause(): void {
@@ -278,26 +370,71 @@ function togglePause(): void {
   pauseButton.textContent = 'Riprendi';
 }
 
+/** `?duration=`, in seconds: a measurement shortcut, never part of the flow. */
+function askedDurationSeconds(): number | null {
+  const asked = new URLSearchParams(window.location.search).get('duration');
+  const seconds = asked === null || asked === '' ? NaN : Number(asked);
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : null;
+}
+
 async function main(): Promise<void> {
   await document.fonts.ready;
 
+  fillKeyOptions(lowestSelect);
+  fillKeyOptions(highestSelect);
+  fillPresetOptions();
+  applyRange(BASE_RANGE);
+  presetSelect.value = DEFAULT_SETTINGS.presetId;
+
+  // The shortcut writes the field, so the screen says what the session does.
+  const asked = askedDurationSeconds();
+  if (asked !== null) durationInput.value = String(asked);
+
+  limitInput.disabled = !capInput.checked;
+  refreshSettings();
+
   // Something on the paper before the allievo presses anything: the screen is
   // the exercise, and an empty staff would look broken.
-  const preview = keysInRange(currentRange());
-  drawTarget(sheet, nearestPlacement(preview[Math.floor(Math.random() * preview.length)]));
+  drawPreview();
   statusLine.textContent = 'Premi Inizia, poi suona la nota che vedi.';
 
   startButton.addEventListener('click', () => void startSession());
   restartButton.addEventListener('click', backToStart);
   pauseButton.addEventListener('click', togglePause);
+  capInput.addEventListener('change', () => {
+    limitInput.disabled = !capInput.checked;
+    if (running === null && !starting) refreshSettings();
+  });
 
   for (const input of rangeInputs) {
     input.addEventListener('change', () => {
-      if (running !== null) return;
-      const keys = keysInRange(currentRange());
-      drawTarget(sheet, nearestPlacement(keys[Math.floor(Math.random() * keys.length)]));
+      if (running !== null || starting) return;
+      applyRange(input.value === 'advanced' ? ADVANCED_RANGE : BASE_RANGE);
+      refreshSettings();
+      drawPreview();
     });
   }
+
+  for (const select of [lowestSelect, highestSelect]) {
+    select.addEventListener('change', () => {
+      if (running !== null || starting) return;
+      // A hand-edited range is no longer the preset: the two radios go back
+      // to no choice, and the selects show the range actually in force.
+      for (const input of rangeInputs) input.checked = false;
+      applyRange(chosenRange());
+      refreshSettings();
+      drawPreview();
+    });
+  }
+
+  for (const input of [durationInput, timeoutInput, limitInput, ...modeInputs]) {
+    input.addEventListener('change', () => {
+      if (running === null && !starting) refreshSettings();
+    });
+  }
+  presetSelect.addEventListener('change', () => {
+    if (running === null && !starting) refreshSettings();
+  });
 
   document.addEventListener('visibilitychange', () => {
     const current = running;

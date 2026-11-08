@@ -18,7 +18,10 @@
         --bad: #c92a2a;
         --warn: #ffd166;
       }
-      * { box-sizing: border-box; }
+      *,
+      *::before,
+      *::after { box-sizing: border-box; }
+      [hidden] { display: none !important; }
       body {
         margin: 0;
         padding: 20px 14px calc(28px + env(safe-area-inset-bottom));
@@ -68,9 +71,25 @@
       button.ghost { background: transparent; border: 1px solid var(--line); color: var(--text); margin-top: 10px; }
 
       fieldset { border: 0; margin: 0; padding: 0; }
+      fieldset + fieldset { margin-top: 16px; }
       legend { color: var(--dim); font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; padding: 0 0 8px; }
       .choice { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: 15px; }
       .choice input { width: 20px; height: 20px; accent-color: var(--accent); margin: 0; }
+      .field { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 0; font-size: 15px; }
+      .field input[type="number"] { width: 96px; }
+      .pair { display: flex; gap: 10px; flex-wrap: wrap; padding-top: 10px; }
+      .pair label { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+      select, input[type="number"] {
+        font: inherit;
+        color: var(--text);
+        background: #0e151d;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px 12px;
+        min-height: 44px;
+      }
+      select:disabled, input:disabled { opacity: 0.5; }
+      .hint { color: var(--warn); font-size: 14px; margin: 12px 0 0; }
 
       details { color: var(--dim); font-size: 14px; }
       summary { cursor: pointer; padding: 6px 2px; }
@@ -86,6 +105,42 @@
         <p class="lead">Leggi la nota sul rigo, poi suonala sul pianoforte.</p>
       </header>
 
+      <section class="card" id="settings">
+        <h2>La prova</h2>
+
+        <fieldset>
+          <legend>Range</legend>
+          <label class="choice"><input type="radio" name="range" value="base" checked /> base · Do3–Do5</label>
+          <label class="choice"><input type="radio" name="range" value="advanced" /> avanzato · Si1–Re6</label>
+          <div class="pair">
+            <label>Dal <select id="lowest" aria-label="nota più bassa"></select></label>
+            <label>Al <select id="highest" aria-label="nota più alta"></select></label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Orologi</legend>
+          <label class="field"><input id="duration" type="number" min="5" max="600" step="5" inputmode="numeric" value="60" /> secondi di sessione</label>
+          <label class="field"><input id="target-timeout" type="number" min="1" max="30" step="1" inputmode="numeric" value="8" /> secondi per bersaglio</label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Tetto ai colpi</legend>
+          <label class="choice"><input id="cap-on" type="checkbox" /> chiudi il bersaglio dopo</label>
+          <label class="field"><input id="wrong-limit" type="number" min="1" max="20" step="1" inputmode="numeric" value="3" disabled /> colpi errati</label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Sequenza</legend>
+          <label class="choice"><input type="radio" name="mode" value="random" checked /> casuale, senza ripetizioni</label>
+          <label class="choice"><input type="radio" name="mode" value="preset" /> da un preset progressivo</label>
+          <label class="choice"><input type="radio" name="mode" value="list" /> dalla lista della maestra</label>
+          <label class="field" id="preset-field" hidden><select id="preset" aria-label="progressione"></select></label>
+        </fieldset>
+
+        <p id="settings-hint" class="hint" role="status" hidden></p>
+      </section>
+
       <section class="card" id="exercise">
         <!-- One target and nothing else on the staff: the whole question. -->
         <div id="target" class="sheet" role="img" aria-label="Un rigo con una nota da leggere"></div>
@@ -93,14 +148,6 @@
         <p id="message" class="message" role="status" hidden></p>
         <button id="start" type="button">Inizia</button>
         <button id="pause" type="button" class="ghost" hidden>Pausa</button>
-      </section>
-
-      <section class="card">
-        <fieldset>
-          <legend>Range</legend>
-          <label class="choice"><input type="radio" name="range" value="base" checked /> base · Do3–Do5</label>
-          <label class="choice"><input type="radio" name="range" value="advanced" /> avanzato · Si1–Re6</label>
-        </fieldset>
       </section>
 
       <section class="card" id="summary" hidden>
