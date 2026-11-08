@@ -84,6 +84,9 @@ Quattordici note, tre pressioni ciascuna: circa due minuti per sonda. Più **La3
 dove il rilevatore è già sicuro: danno il rapporto dispari/pari di una corda davvero premuta, che è il
 termine di paragone senza cui i casi contesi non si leggono.
 
+Le due pagine **offrono nel selettore solo queste sedici note**, nell'ordine della tabella: così non si
+può sbagliare nota mentre si suona, e il selettore fa parte della misura.
+
 Con una sola classe di note il discriminante non si può valutare: uno che rispondesse sempre "è
 risonanza" sarebbe perfetto su metà dei dati. Scaricare i due JSON separatamente.
 
