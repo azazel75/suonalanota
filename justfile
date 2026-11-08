@@ -22,6 +22,14 @@ devshell := env("DEVSHELL", "nix develop --command")
 # Everything the gate runs, cheapest failure first.
 default: check
 
+# Build the site as the Nix package: `result/` is the directory to deploy.
+package:
+    nix build .#
+
+# The same gate, offline and inside the sandbox, against exactly what ships.
+check-nix:
+    nix flake check
+
 # Fetch the JavaScript dependencies from package-lock.json.
 install:
     {{devshell}} npm install

@@ -23,6 +23,19 @@ sul sistema.
 nix develop      # la shell, se la vuoi interattiva
 ```
 
+## Il pacchetto da pubblicare
+
+```sh
+just package     # nix build .# — la cartella `result/` è quella da copiare sul server
+```
+
+Le dipendenze JavaScript sono fissate da `package-lock.json` attraverso `npmDepsHash`: il build non
+usa la rete, e lo stesso `flake.lock` produce la stessa cartella. `just check-nix` (`nix flake check`)
+esegue i test e il controllo dei tipi dentro il sandbox, sulle stesse dipendenze del pacchetto.
+
+Il pacchetto contiene esattamente ciò che si serve: `index.html`, `assets/` e le tre pagine di
+`spike/`. Non contiene sorgenti né `node_modules`.
+
 ## Lo spike dell'ascolto
 
 `spike/ascolto.html` è uno strumento di misura, non un pezzo di prodotto. Suona una nota con il
