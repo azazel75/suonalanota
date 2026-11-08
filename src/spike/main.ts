@@ -28,6 +28,16 @@ import { createOnsetDetector } from '../audio/onset';
 const FFT_SIZE = 16_384;
 /** The attack is measured on a short window: 43 ms, not the 341 ms the pitch needs. */
 const ONSET_WINDOW = 2_048;
+
+/**
+ * How long to wait after an attack before reading the pitch.
+ *
+ * The long window needs 341 ms to fill: read at the attack and it still holds
+ * the silence before it. Measured on the third run, accuracy at that instant was
+ * 46%, and 93% once the note had settled for five frames. 150 ms buys four
+ * frames and stays inside the 400 ms attack-to-verdict criterion.
+ */
+const READ_DELAY_MS = 150;
 const ANALYSIS_INTERVAL_MS = 40;
 const SPECTRUM_MIN_HZ = 20;
 const SPECTRUM_MAX_HZ = 8_000;
@@ -73,6 +83,8 @@ interface Colpo {
   /** The pair of amplitudes that decides the octave, so the rule can be calibrated. */
   fundamentalMagnitude: number;
   octaveBelowMagnitude: number;
+  /** How much the winner stands out from the median candidate: for the gate, later. */
+  credibility: number;
   octaveFlipped: boolean;
   top: { midi: number; name: string; score: number }[];
 }
@@ -130,6 +142,7 @@ let lastDetection: Detection | null = null;
 let lastLevelDb = DB_FLOOR;
 let recentWinners: number[] = [];
 let lastStability = 0;
+let pendingAttackAt: number | null = null;
 let timeBuffer = new Float32Array(FFT_SIZE);
 let noiseFrames: Float32Array[] = [];
 let noiseTarget = 0;
@@ -381,6 +394,7 @@ function record(detection: Detection, levelDb: number, nowMs: number, stability:
     fundamentalPresent: detection.fundamentalPresent,
     fundamentalMagnitude: round(detection.fundamentalMagnitude, 5),
     octaveBelowMagnitude: round(detection.octaveBelowMagnitude, 5),
+    credibility: round(detection.credibility, 2),
     octaveFlipped: detection.octaveFlipped,
     top: detection.candidates.slice(0, 5).map((candidate) => ({
       midi: candidate.midi,
@@ -447,7 +461,8 @@ function analyse(nowMs: number): void {
   if (analyser === null || context === null) return;
 
   analyser.getFloatTimeDomainData(timeBuffer);
-  const levelDb = toDecibels(rms(timeBuffer), DB_FLOOR);
+  const level = rms(timeBuffer);
+  const levelDb = toDecibels(level, DB_FLOOR);
 
   // Two windows, two questions. The short one hears the attack (2048 samples,
   // 43 ms); the long one resolves the pitch (341 ms, needed for the bass). The
@@ -457,6 +472,7 @@ function analyse(nowMs: number): void {
   const detection = analyseSpectrum(magnitudes, context.sampleRate, {
     lowMidi: activeRange.low,
     highMidi: activeRange.high,
+    frameRms: level,
   });
 
   lastLevelDb = levelDb;
@@ -476,12 +492,21 @@ function analyse(nowMs: number): void {
   collectNoise(magnitudes, context.sampleRate);
 
   const attack = onset.push(attackMagnitudes, nowMs);
+  if (attack) pendingAttackAt = nowMs;
+
   onsetsCell.textContent = attack
     ? 'attacco'
     : `flusso ${onset.flux.toFixed(3)} / soglia ${Number.isFinite(onset.threshold) ? onset.threshold.toFixed(3) : '—'}` +
-      ` · ${onset.armed ? 'armato' : 'in attesa che il suono scenda'}`;
+      ` · ${onset.armed ? 'armato' : 'in attesa che il suono scenda'}` +
+      (pendingAttackAt === null ? '' : ' · lettura fra poco');
 
-  if (attack && detection.best.score >= gate) record(detection, levelDb, nowMs, stability);
+  // Read the pitch after the note has settled, not at the attack: the 341 ms
+  // window is still filling with the silence that came before it.
+  if (pendingAttackAt !== null && nowMs - pendingAttackAt >= READ_DELAY_MS) {
+    const attackAt = pendingAttackAt;
+    pendingAttackAt = null;
+    if (detection.best.score >= gate) record(detection, levelDb, attackAt, stability);
+  }
 }
 
 function loop(nowMs: number): void {
@@ -599,6 +624,7 @@ async function start(): Promise<void> {
 
 function stop(): void {
   running = false;
+  pendingAttackAt = null;
   startButton.disabled = false;
   stopButton.disabled = true;
   measureButton.disabled = true;
@@ -617,6 +643,14 @@ function download(): void {
     device: deviceInfo,
     reference,
     gate,
+    detector: {
+      fftSize: FFT_SIZE,
+      onsetWindow: ONSET_WINDOW,
+      readDelayMs: READ_DELAY_MS,
+      octaveEvidence: false,
+      partialTolerance: 0.02,
+      harmonics: 8,
+    },
     colpi: log,
     noise: noiseReport,
   };

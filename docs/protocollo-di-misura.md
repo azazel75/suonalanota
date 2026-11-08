@@ -38,10 +38,22 @@ confronto fra due versioni del codice: è un confronto fra due esperimenti.
 | --- | --- | --- | --- | --- | --- |
 | **1** · 7 nov | prima versione | tutti gli 88 tasti | 0,0178 (a fine sessione) | 265 | 72% complessivo |
 | **2** · 8 nov | le cinque correzioni | Si1–Re6 (35–86) | **0,0002** (minimo dello slider, rumore mai misurato) | 243 | 59% grezzo, 75% scartando i colpi sotto 0,002 |
-| **3** · da fare | parabola limitata | Si1–Re6 | misurata dal rumore, **prima** di suonare | | |
+| **3** · 8 nov | parabola limitata | Si1–Re6 | 0,0002 (il rumore misurato dà comunque il minimo) | 245 | **86% senza la regola dell'ottava**, 74% con |
+| **4** · da fare | lettura 150 ms dopo l'attacco, regola spenta | Si1–Re6 | misurata, poi calibrata su `credibility` | | |
 
-Il secondo giro non è confrontabile col primo: cambiavano insieme il codice, il range e la soglia.
-Un giro che cambia tre cose misura la confusione. Il terzo cambia **solo il codice**.
+Il secondo giro non è confrontabile col primo: cambiavano insieme il codice, il range e la soglia. Il
+terzo è confrontabile col secondo per protocollo, ma il codice è cambiato; il quarto è il primo che
+misura il comportamento che l'applicazione avrà davvero.
+
+## Accordatura dello strumento
+
+Dal terzo giro, con la frequenza **misurata** e non quella nominale: la mediana degli scarti è
+**+6 cent** (il pianoforte è un filo crescente, praticamente a 440). Nel registro grave la misura non
+può dire nulla: a 48 kHz e 16384 campioni un bin vale 2,93 Hz, che a 65 Hz sono **78 cent** — più di
+mezzo semitono. Il sospetto di Emilia sul Do2 (+56 cent misurati, un solo colpo) è compatibile con
+l'accordatura, ma questo log non lo può né confermare né smentire: servirebbe una finestra dieci
+volte più lunga.
+
 
 ## Cosa si conserva
 

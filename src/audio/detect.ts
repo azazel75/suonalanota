@@ -14,16 +14,23 @@
  * out of tune. A semitone is 5.9%, so a 2% window cannot reach the neighbour.
  *
  * Two rules keep the octave in place, and both were written after measuring a
- * real instrument (docs/adr/0004-rilevatore-dopo-il-primo-spike.md):
+ * real instrument (docs/adr/0004, docs/adr/0006):
  *
  *  - the search is bounded to the range of the exercise. Searching all 88 keys
  *    hands a plausible name to every knock, to a chair and to a rumble;
  *  - every note's partials are the *even* partials of the note an octave below,
  *    so the octave below always scores close: measured margins between a real
- *    winner and its octave were 0.5-3.3 dB. The octave below is preferred only
- *    when it is that close AND its own fundamental is actually present in the
- *    spectrum. Penalising sub-octaves by a flat amount does not work: it just
- *    moves the error to the opposite direction.
+ *    winner and its octave were 0.5-3.3 dB. The octave rule below prefers the
+ *    octave below when it is that close AND its fundamental carries a real share
+ *    of the frame's energy — a real string does, a sympathetically resonant one
+ *    does not.
+ *
+ * The octave rule is **off by default**, and that is a measurement, not caution:
+ * on 245 colpi of a grand piano it was neutral overall — it repaired the bass,
+ * where the fundamental is inaudible, and broke the treble, where the string an
+ * octave below resonates — and it was harmful on unsettled frames, where it
+ * dragged room noise down an octave. Its inputs are still logged, so the
+ * decision can be re-taken on data instead of opinion.
  */
 import { HIGHEST_MIDI, LOWEST_MIDI, midiToHz, pitchClass } from './notes';
 
@@ -35,6 +42,17 @@ export const PARTIAL_TOLERANCE = 0.02;
 
 /** Beyond this margin the winner is not a tie with its octave: leave it alone. */
 export const OCTAVE_TIE_DB = 6;
+
+/** The octave below is chosen only when its fundamental is at least this share of
+ * the frame's RMS.
+ *
+ * Calibrated on a grand piano, 245 colpi (docs/adr/0006): the flips that were
+ * right had a lower fundamental at a median 0.072 of the frame RMS; the flips
+ * that were wrong — a string of the octave below resonating by sympathy, which
+ * is what a piano does — sat at 0.004. A share of the energy is scale-free, so
+ * it does not move when the microphone gain changes; an absolute amplitude does.
+ */
+export const OCTAVE_EVIDENCE_SHARE = 0.06;
 
 /** A fundamental counts as present when it stands this far above the noise floor. */
 export const NOISE_FACTOR = 20;
@@ -64,8 +82,10 @@ export interface DetectionOptions {
   lowMidi?: number;
   /** Highest key the exercise can ask for. */
   highMidi?: number;
-  /** When false the octave rule is skipped, to compare with and without it. */
+  /** When false the octave rule is skipped. Off by default: see below. */
   octaveEvidence?: boolean;
+  /** RMS of the analysed frame; derived from the spectrum when not given. */
+  frameRms?: number;
 }
 
 export interface Detection {
@@ -87,6 +107,8 @@ export interface Detection {
   fundamentalMagnitude: number;
   /** Amplitude where the octave below would have its fundamental, 0 if out of range. */
   octaveBelowMagnitude: number;
+  /** Winner's score over the median score of the whole range: how much it stands out. */
+  credibility: number;
   /** True when the octave rule moved the winner one octave down. */
   octaveFlipped: boolean;
 }
@@ -175,6 +197,24 @@ export function noiseFloor(magnitudes: Float32Array, stride = 4): number {
   return values[values.length >> 1];
 }
 
+/**
+ * RMS of the frame, recovered from the amplitude spectrum (Parseval), for callers
+ * that do not have the time-domain buffer at hand. A Hann window spreads each
+ * partial over a few bins, so this overestimates the true RMS by about 20%: fine
+ * as a fallback, but pass `frameRms` when you have it.
+ */
+export function spectrumRms(magnitudes: Float32Array): number {
+  let power = 0;
+  for (let bin = 1; bin < magnitudes.length; bin++) power += magnitudes[bin] * magnitudes[bin];
+  return Math.sqrt(power / 2);
+}
+
+function medianOf(values: number[]): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((left, right) => left - right);
+  return sorted[sorted.length >> 1];
+}
+
 /** Harmonic sum of one key of the piano. */
 export function scoreKey(
   magnitudes: Float32Array,
@@ -219,7 +259,7 @@ export function analyseSpectrum(
 ): Detection {
   const lowMidi = options.lowMidi ?? LOWEST_MIDI;
   const highMidi = options.highMidi ?? HIGHEST_MIDI;
-  const useOctaveEvidence = options.octaveEvidence ?? true;
+  const useOctaveEvidence = options.octaveEvidence ?? false;
 
   const candidates: Candidate[] = [];
   const byMidi = new Map<number, number>();
@@ -235,16 +275,22 @@ export function analyseSpectrum(
   const present = (magnitude: number): boolean =>
     magnitude > ABSOLUTE_PRESENCE && magnitude > floor * NOISE_FACTOR;
 
+  const frameRms = options.frameRms ?? spectrumRms(magnitudes);
+
   let best = candidates[0];
   let octaveFlipped = false;
 
-  if (useOctaveEvidence) {
+  if (useOctaveEvidence && frameRms > 0) {
     const lowerMidi = best.midi - 12;
     const lowerScore = byMidi.get(lowerMidi);
     if (lowerScore !== undefined) {
       const tie = decibelsRatio(best.score, lowerScore) <= OCTAVE_TIE_DB;
       const lowerFundamental = fundamentalOf(magnitudes, sampleRate, lowerMidi);
-      if (tie && present(lowerFundamental.magnitude)) {
+      // A share of the frame's energy, not an absolute amplitude: a real string
+      // puts a real part of the sound on its fundamental, a sympathetic resonance
+      // puts a trace. An absolute threshold would move with the microphone gain.
+      const evidence = lowerFundamental.magnitude >= OCTAVE_EVIDENCE_SHARE * frameRms;
+      if (tie && evidence) {
         const lower = candidates.find((candidate) => candidate.midi === lowerMidi);
         if (lower !== undefined) {
           best = lower;
@@ -261,6 +307,7 @@ export function analyseSpectrum(
   const below = best.midi - 12 >= lowMidi
     ? fundamentalOf(magnitudes, sampleRate, best.midi - 12)
     : null;
+  const typical = medianOf(candidates.map((candidate) => candidate.score));
 
   return {
     best,
@@ -272,6 +319,7 @@ export function analyseSpectrum(
     fundamentalPresent: present(fundamental.magnitude),
     fundamentalMagnitude: fundamental.magnitude,
     octaveBelowMagnitude: below?.magnitude ?? 0,
+    credibility: typical > 0 ? best.score / typical : 99,
     octaveFlipped,
   };
 }

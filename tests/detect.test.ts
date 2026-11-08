@@ -260,30 +260,45 @@ describe('the onset detector against a real-shaped note', () => {
 });
 
 describe('the octave rule', () => {
-  test('the octave below is chosen when its own fundamental is in the spectrum', () => {
-    // A bass note whose fundamental barely survives the microphone, with the
-    // partials above it falling away fast: without the rule the octave above wins.
-    const partials: Partial[] = [
-      { hz: midiToHz(A2), amplitude: 0.02 },
+  // Only the even partials, with a fundamental much weaker than the second: the
+  // shape a bass note takes when the microphone barely hears its fundamental.
+  // Without the rule the sum prefers the octave above.
+  function weakFundamental(fundamental: number): Partial[] {
+    return [
+      { hz: midiToHz(A2), amplitude: fundamental },
       { hz: midiToHz(A2) * 2, amplitude: 1 },
-      { hz: midiToHz(A2) * 3, amplitude: 0.5 },
-      { hz: midiToHz(A2) * 4, amplitude: 0.2 },
+      { hz: midiToHz(A2) * 4, amplitude: 0.5 },
+      { hz: midiToHz(A2) * 6, amplitude: 0.25 },
     ];
-    const magnitudes = amplitudeSpectrum(synthesise(partials));
+  }
 
-    const withoutRule = analyseSpectrum(magnitudes, SAMPLE_RATE, { octaveEvidence: false });
-    const withRule = analyseSpectrum(magnitudes, SAMPLE_RATE);
+  test('the octave below is chosen when its fundamental carries a share of the energy', () => {
+    const magnitudes = amplitudeSpectrum(synthesise(weakFundamental(0.2)));
 
-    // Canary: this is what the first spike measured, and why the rule exists.
+    const withoutRule = analyseSpectrum(magnitudes, SAMPLE_RATE);
+    const withRule = analyseSpectrum(magnitudes, SAMPLE_RATE, { octaveEvidence: true });
+
+    // Canary: without the rule this is what the detector says, and why the rule
+    // exists. It is off by default on the measured evidence of ADR 0006.
     expect(withoutRule.best.midi).toBe(A2 + 12);
     expect(withRule.best.midi).toBe(A2);
     expect(withRule.octaveFlipped).toBe(true);
   });
 
+  test('but it refuses to guess when the fundamental is only a trace', () => {
+    // Calibrated on a grand piano (docs/adr/0006): the flips that were right had
+    // the lower fundamental at 0.07 of the frame's RMS, the wrong ones — a string
+    // resonating by sympathy — at 0.004. At 2% the rule must stay its hand.
+    const magnitudes = amplitudeSpectrum(synthesise(weakFundamental(0.02)));
+    const detection = analyseSpectrum(magnitudes, SAMPLE_RATE, { octaveEvidence: true });
+    expect(detection.best.midi).toBe(A2 + 12);
+    expect(detection.octaveFlipped).toBe(false);
+  });
+
   test('a note played on its own is not dragged down an octave', () => {
     // The octave below always scores close, because every note's partials are
     // the even partials of the note an octave below. It must not be chosen when
-    // there is nothing at its own fundamental.
+    // its own fundamental carries no energy.
     const detection = detect(pianoTone(A4));
     expect(detection.best.midi).toBe(A4);
     expect(detection.octaveFlipped).toBe(false);
