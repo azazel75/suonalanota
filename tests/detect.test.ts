@@ -10,7 +10,7 @@
  */
 import { describe, expect, test } from 'vitest';
 
-import { analyseSpectrum, isOctaveApart } from '../src/audio/detect';
+import { analyseSpectrum, binWidth, isOctaveApart, peakAt } from '../src/audio/detect';
 import { amplitudeSpectrum, rms, toDecibels } from '../src/audio/fft';
 import { createOnsetDetector, median, spectralFlux } from '../src/audio/onset';
 import { midiToHz, midiToName, HIGHEST_MIDI, LOWEST_MIDI } from '../src/audio/notes';
@@ -318,4 +318,42 @@ describe('the measured frequency', () => {
     expect(flat.measuredHz).toBeLessThan(expected + 2);
   });
 });
+
+describe('the parabolic refinement of a peak', () => {
+  // A flat spectrum with a small wobble is where the unguarded parabola used to
+  // explode: the denominator goes to zero, the offset reaches tens of bins, and
+  // the peak is reported both at an absurd frequency and at an inflated
+  // amplitude. The second spike log is full of 182 Hz readings for 116 Hz notes.
+  function noisySpectrum(seed: number): Float32Array {
+    const values = new Float32Array(8192);
+    let state = seed;
+    for (let bin = 1; bin < values.length; bin++) {
+      state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+      values[bin] = 1e-5 * (0.9 + 0.2 * ((state >>> 8) / 0xffffff));
+    }
+    return values;
+  }
+
+  test('cannot report a frequency outside its own search window', () => {
+    const magnitudes = noisySpectrum(1);
+    const width = binWidth(SAMPLE_RATE, magnitudes);
+    for (const midi of [46, 43, 60, 84]) {
+      const expected = midiToHz(midi) / width;
+      const peak = peakAt(magnitudes, expected, 1);
+      expect(Math.abs(peak.bin - expected)).toBeLessThan(1.5);
+      expect(peak.magnitude).toBeLessThan(2e-5);
+    }
+  });
+
+  test('cannot clear the gate with an inflated amplitude', () => {
+    const detection = analyseSpectrum(noisySpectrum(7), SAMPLE_RATE, { lowMidi: 35, highMidi: 86 });
+    expect(detection.best.score).toBeLessThan(0.002);
+    // The search window is ±2% of the partial (at least one bin), so that is how
+    // far the measured frequency may sit from the nominal one — and no further.
+    const width = binWidth(SAMPLE_RATE, noisySpectrum(7));
+    const tolerance = Math.max(width * 1.5, detection.best.hz * 0.02) + width;
+    expect(Math.abs(detection.measuredHz - detection.best.hz)).toBeLessThan(tolerance);
+  });
+});
+
 

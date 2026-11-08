@@ -83,6 +83,10 @@ export interface Detection {
   measuredHz: number;
   /** Whether the winner's fundamental stands above the noise floor. */
   fundamentalPresent: boolean;
+  /** Amplitude of the winner's fundamental. */
+  fundamentalMagnitude: number;
+  /** Amplitude where the octave below would have its fundamental, 0 if out of range. */
+  octaveBelowMagnitude: number;
   /** True when the octave rule moved the winner one octave down. */
   octaveFlipped: boolean;
 }
@@ -101,6 +105,13 @@ export function binWidth(sampleRate: number, magnitudes: Float32Array): number {
 /**
  * The largest of the `radius` neighbours of a bin, refined by a parabola through
  * the three around it: a partial rarely sits exactly on a bin.
+ *
+ * The parabola is only valid on a *concave* peak, and its offset is at most half
+ * a bin. Without those two guards the arithmetic explodes on a flat, noisy
+ * region: the denominator goes to zero, the offset reaches tens of bins, and the
+ * "peak" is reported both at an absurd frequency (182 Hz for a 116 Hz note) and
+ * at an inflated amplitude — which is how room noise used to clear the gate and
+ * become a colpo. Measured, not imagined: the second spike log is full of them.
  */
 export function peakAt(magnitudes: Float32Array, bin: number, radius = 1): Peak {
   const centre = Math.round(bin);
@@ -121,12 +132,18 @@ export function peakAt(magnitudes: Float32Array, bin: number, radius = 1): Peak 
 
   const left = magnitudes[bestIndex - 1];
   const right = magnitudes[bestIndex + 1];
+
+  // Not a local maximum: nothing to interpolate, and the plain bin is the answer.
+  if (!(left < best && best > right)) return { magnitude: best, bin: bestIndex };
+
   const curvature = left - 2 * best + right;
-  if (curvature === 0) return { magnitude: best, bin: bestIndex };
+  if (curvature >= 0) return { magnitude: best, bin: bestIndex };
 
   const offset = (0.5 * (left - right)) / curvature;
+  if (!Number.isFinite(offset) || Math.abs(offset) > 0.5) return { magnitude: best, bin: bestIndex };
+
   return {
-    magnitude: Math.max(0, best - 0.25 * (left - right) * offset),
+    magnitude: Math.max(best, best - 0.25 * (left - right) * offset),
     bin: bestIndex + offset,
   };
 }
@@ -241,6 +258,9 @@ export function analyseSpectrum(
   const octaveScores = [byMidi.get(best.midi - 12) ?? 0, byMidi.get(best.midi + 12) ?? 0];
   const strongestOctave = Math.max(...octaveScores);
   const fundamental = fundamentalOf(magnitudes, sampleRate, best.midi);
+  const below = best.midi - 12 >= lowMidi
+    ? fundamentalOf(magnitudes, sampleRate, best.midi - 12)
+    : null;
 
   return {
     best,
@@ -250,6 +270,8 @@ export function analyseSpectrum(
     octaveMarginDb: decibelsRatio(best.score, strongestOctave),
     measuredHz: fundamental.magnitude > 0 ? fundamental.hz : 0,
     fundamentalPresent: present(fundamental.magnitude),
+    fundamentalMagnitude: fundamental.magnitude,
+    octaveBelowMagnitude: below?.magnitude ?? 0,
     octaveFlipped,
   };
 }

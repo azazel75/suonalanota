@@ -32,6 +32,17 @@ Posizione e orientamento del telefono, apertura del coperchio, stanza, numero di
 modo di suonare. Se cambia una di queste cose, il confronto con il giro precedente non è più un
 confronto fra due versioni del codice: è un confronto fra due esperimenti.
 
+## I giri di misura
+
+| giro | codice | range cercato | soglia | colpi | esito |
+| --- | --- | --- | --- | --- | --- |
+| **1** · 7 nov | prima versione | tutti gli 88 tasti | 0,0178 (a fine sessione) | 265 | 72% complessivo |
+| **2** · 8 nov | le cinque correzioni | Si1–Re6 (35–86) | **0,0002** (minimo dello slider, rumore mai misurato) | 243 | 59% grezzo, 75% scartando i colpi sotto 0,002 |
+| **3** · da fare | parabola limitata | Si1–Re6 | misurata dal rumore, **prima** di suonare | | |
+
+Il secondo giro non è confrontabile col primo: cambiavano insieme il codice, il range e la soglia.
+Un giro che cambia tre cose misura la confusione. Il terzo cambia **solo il codice**.
+
 ## Cosa si conserva
 
 Il log JSON di ogni giro, con la data nel nome, fuori dal repository (contiene il `deviceId` del

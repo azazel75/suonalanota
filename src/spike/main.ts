@@ -70,6 +70,9 @@ interface Colpo {
   rangeHigh: number;
   stability: number;
   fundamentalPresent: boolean;
+  /** The pair of amplitudes that decides the octave, so the rule can be calibrated. */
+  fundamentalMagnitude: number;
+  octaveBelowMagnitude: number;
   octaveFlipped: boolean;
   top: { midi: number; name: string; score: number }[];
 }
@@ -376,6 +379,8 @@ function record(detection: Detection, levelDb: number, nowMs: number, stability:
     rangeHigh: activeRange.high,
     stability,
     fundamentalPresent: detection.fundamentalPresent,
+    fundamentalMagnitude: round(detection.fundamentalMagnitude, 5),
+    octaveBelowMagnitude: round(detection.octaveBelowMagnitude, 5),
     octaveFlipped: detection.octaveFlipped,
     top: detection.candidates.slice(0, 5).map((candidate) => ({
       midi: candidate.midi,
@@ -542,6 +547,14 @@ async function start(): Promise<void> {
   stopButton.disabled = false;
   measureButton.disabled = false;
   setStatus('in ascolto', true);
+
+  if (noiseReport === null) {
+    flashLine.className = 'warn';
+    flashLine.textContent =
+      'Prima di suonare, in silenzio, premi «Misura il rumore della stanza»: è quello che fissa ' +
+      'la soglia. Senza quella misura la pagina registra anche il rumore, e i colpi si riempiono ' +
+      'di note che nessuno ha suonato.';
+  }
 
   const track = stream.getAudioTracks()[0];
   const settings = (track?.getSettings() ?? {}) as Record<string, unknown>;
