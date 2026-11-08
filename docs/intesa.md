@@ -23,19 +23,19 @@ l'esercizio, niente backend, niente dati che escono dal dispositivo.
 
 ## I numeri
 
-| | |
-| --- | --- |
-| durata sessione | 60 s, configurabile; la pausa non conta |
-| per bersaglio | 8 s; colpi liberi fino allo scadere; tetto ai colpi configurabile e spento |
-| range base | Do3–Do5 (48–72) |
-| range avanzato | Si1–Re6 (35–86) |
-| chiavi | entrambe nella stessa sessione, di default |
-| chiave di una nota | quella che la lascia più vicina al rigo; il Do centrale alterna |
-| tagli addizionali | si disegnano, senza avvisi |
-| sequenza | casuale senza ripetizioni, preset, lista della maestra (editor + JSON) |
-| schermate | avvio con soundcheck, scelta, esercizio, riepilogo |
-| classifica | locale, nickname facoltativo |
-| distribuzione | PWA installabile, funzionante offline, cartella statica |
+|                    |                                                                            |
+|--------------------|----------------------------------------------------------------------------|
+| durata sessione    | 60 s, configurabile; la pausa non conta                                    |
+| per bersaglio      | 8 s; colpi liberi fino allo scadere; tetto ai colpi configurabile e spento |
+| range base         | Do3–Do5 (48–72)                                                            |
+| range avanzato     | Si1–Re6 (35–86)                                                            |
+| chiavi             | entrambe nella stessa sessione, di default                                 |
+| chiave di una nota | quella che la lascia più vicina al rigo; il Do centrale alterna            |
+| tagli addizionali  | si disegnano, senza avvisi                                                 |
+| sequenza           | casuale senza ripetizioni, preset, lista della maestra (editor + JSON)     |
+| schermate          | avvio con soundcheck, scelta, esercizio, riepilogo                         |
+| classifica         | locale, nickname facoltativo                                               |
+| distribuzione      | PWA installabile, funzionante offline, cartella statica                    |
 
 ## L'ascolto
 
@@ -56,14 +56,14 @@ Solo microfono: il pianoforte acustico e iPad escludono il MIDI, e il caso d'uso
 
 ## Cosa sappiamo, misurato
 
-Su una mezza coda Yamaha, coperchio chiuso, telefono Android di fascia media, microfono del telefono:
+Su un mezza coda Yamaha, coperchio chiuso, telefono Android di fascia media, microfono del telefono:
 
-| registro | come va |
-| --- | --- |
-| sotto Mi2 | inutilizzabile (14-17%): lo esclude il soundcheck |
-| Mi2–Si2 | 85-95% |
+| registro       | come va                                              |
+|----------------|------------------------------------------------------|
+| sotto Mi2      | inutilizzabile (14-17%): lo esclude il soundcheck    |
+| Mi2–Si2        | 85-95%                                               |
 | Do3–Do5 (base) | 84% severo, **92%** contando a parte i colpi ambigui |
-| Do#5–Re6 | 85-100% |
+| Do#5–Re6       | 85-100%                                              |
 
 Nessuna nota inventata fuori dal range; colpi duplicati scesi dal 11% all'1-3%; frequenza misurata
 registrata per ogni colpo, così un errore del rilevatore si distingue da un errore dell'allievo.

@@ -110,7 +110,18 @@ dopo circa 5 secondi di silenzio assoluto, il messaggio compare al posto del con
 A fine sessione: centrate, sbagliate, saltate, totale, note al minuto, ed elenco delle note
 sbagliate. Durante la sessione un contatore discreto, non un HUD.
 
-Classifica locale al dispositivo, con nickname facoltativo. Nessun dato lascia il dispositivo.
+## Classifica
+
+**Requisito** (confermato da Emilia). Locale al dispositivo, con nickname facoltativo, e ordinata
+**per configurazione dell'esercizio** — range, durata e modalità: un punteggio di venti note al
+minuto sul range base e uno di otto sull'avanzato non si confrontano, e una sessione da due minuti
+batte sempre una da uno.
+
+Dieci voci per configurazione, la propria evidenziata anche quando sta fuori. Per voce: nickname,
+centrate, sbagliate, saltate, totale, note al minuto, data. Ogni voce si può cancellare, e c'è
+"svuota tutto" — è un telefono che passa di mano.
+
+Nessun dato lascia il dispositivo.
 
 ## Log
 
