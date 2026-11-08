@@ -12,8 +12,17 @@
  * thread, the buffers are reallocated every frame, and the analysis is throttled
  * to 25 frames per second instead of following the audio clock.
  */
-import { analyseSpectrum, type Detection } from '../audio/detect';
-import { amplitudeSpectrum, rms, toDecibels } from '../audio/fft';
+import type { Detection } from '../audio/detect';
+import { toDecibels } from '../audio/fft';
+import {
+  ANALYSIS_INTERVAL_MS,
+  DB_FLOOR,
+  FFT_SIZE,
+  ONSET_WINDOW,
+  READ_DELAY_MS,
+  createListener,
+  type Colpo,
+} from '../audio/listener';
 import {
   HIGHEST_MIDI,
   LOWEST_MIDI,
@@ -23,25 +32,9 @@ import {
   pianoKeys,
   pitchClass,
 } from '../audio/notes';
-import { createOnsetDetector } from '../audio/onset';
 
-const FFT_SIZE = 16_384;
-/** The attack is measured on a short window: 43 ms, not the 341 ms the pitch needs. */
-const ONSET_WINDOW = 2_048;
-
-/**
- * How long to wait after an attack before reading the pitch.
- *
- * The long window needs 341 ms to fill: read at the attack and it still holds
- * the silence before it. Measured on the third run, accuracy at that instant was
- * 46%, and 93% once the note had settled for five frames. 150 ms buys four
- * frames and stays inside the 400 ms attack-to-verdict criterion.
- */
-const READ_DELAY_MS = 150;
-const ANALYSIS_INTERVAL_MS = 40;
 const SPECTRUM_MIN_HZ = 20;
 const SPECTRUM_MAX_HZ = 8_000;
-const DB_FLOOR = -100;
 const NOISE_FRAMES = 25;
 
 interface NoteRange {
@@ -60,7 +53,8 @@ const RANGES: NoteRange[] = [
 
 type Verdict = 'giusto' | 'ottava' | 'altro';
 
-interface Colpo {
+/** One row of the log this page downloads: the colpo, plus the conditions it was read under. */
+interface LogEntry {
   at: number;
   reference: number;
   referenceName: string;
@@ -130,22 +124,20 @@ const countersFacts = element<HTMLDivElement>('counters');
 const referenceTable = element<HTMLTableSectionElement>('ref-table');
 const noiseOutput = element<HTMLParagraphElement>('noise-out');
 
-const onset = createOnsetDetector();
-const log: Colpo[] = [];
+const log: LogEntry[] = [];
 
 let reference = 60;
 let activeRange: NoteRange = RANGES[1];
-let minCredibility = Number(gateInput.value);
+const listener = createListener({
+  lowMidi: activeRange.low,
+  highMidi: activeRange.high,
+  minCredibility: Number(gateInput.value),
+});
 let context: AudioContext | null = null;
 let analyser: AnalyserNode | null = null;
 let stream: MediaStream | null = null;
 let running = false;
 let lastAnalysisMs = 0;
-let lastDetection: Detection | null = null;
-let lastLevelDb = DB_FLOOR;
-let recentWinners: number[] = [];
-let lastStability = 0;
-let pendingAttackAt: number | null = null;
 let timeBuffer = new Float32Array(FFT_SIZE);
 let noiseFrames: Float32Array[] = [];
 let noiseTarget = 0;
@@ -304,14 +296,14 @@ function showDetection(detection: Detection, levelDb: number): void {
   }
 }
 
-function flashVerdict(colpo: Colpo): void {
+function flashVerdict(entry: LogEntry): void {
   // An ambiguous colpo is not a mistake by the player and must not cost an
   // attempt: the exercise asks to play it again.
-  if (colpo.ambiguous) {
+  if (entry.ambiguous) {
     flashLine.className = 'warn';
     flashLine.textContent =
       `ambiguo (l'ottava non è distinguibile): chiedi di ripetere — ` +
-      `atteso ${colpo.referenceName}, sentito ${colpo.detectedName}`;
+      `atteso ${entry.referenceName}, sentito ${entry.detectedName}`;
     return;
   }
 
@@ -325,12 +317,12 @@ function flashVerdict(colpo: Colpo): void {
     ottava: 'ottava sbagliata',
     altro: 'altra nota',
   };
-  flashLine.className = colours[colpo.verdict];
+  flashLine.className = colours[entry.verdict];
   flashLine.textContent =
-    `${words[colpo.verdict]}: atteso ${colpo.referenceName}, sentito ${colpo.detectedName}` +
-    ` (margine ${colpo.marginDb} dB, ottava ${colpo.octaveMarginDb} dB)`;
+    `${words[entry.verdict]}: atteso ${entry.referenceName}, sentito ${entry.detectedName}` +
+    ` (margine ${entry.marginDb} dB, ottava ${entry.octaveMarginDb} dB)`;
 
-  noteDisplay.className = colpo.verdict === 'giusto' ? 'good' : 'bad';
+  noteDisplay.className = entry.verdict === 'giusto' ? 'good' : 'bad';
   window.setTimeout(() => {
     noteDisplay.className = '';
   }, 400);
@@ -338,16 +330,16 @@ function flashVerdict(colpo: Colpo): void {
 
 function renderCounters(): void {
   const totals = { colpi: log.length, giusto: 0, ottava: 0, altro: 0 };
-  const ambiguous = log.filter((colpo) => colpo.ambiguous).length;
+  const ambiguous = log.filter((entry) => entry.ambiguous).length;
   const perReference = new Map<number, { colpi: number; giusto: number; ottava: number; altro: number }>();
 
-  for (const colpo of log) {
-    totals[colpo.verdict] += 1;
-    const bucket = perReference.get(colpo.reference) ??
+  for (const entry of log) {
+    totals[entry.verdict] += 1;
+    const bucket = perReference.get(entry.reference) ??
       { colpi: 0, giusto: 0, ottava: 0, altro: 0 };
     bucket.colpi += 1;
-    bucket[colpo.verdict] += 1;
-    perReference.set(colpo.reference, bucket);
+    bucket[entry.verdict] += 1;
+    perReference.set(entry.reference, bucket);
   }
 
   countersFacts.replaceChildren();
@@ -388,29 +380,31 @@ function renderCounters(): void {
   }
 }
 
-function record(detection: Detection, levelDb: number, nowMs: number, stability: number): void {
-  const colpo: Colpo = {
-    at: Math.round(nowMs),
+function record(colpo: Colpo): void {
+  const detection = colpo.detection;
+  const entry: LogEntry = {
+    at: Math.round(colpo.at),
     reference,
     referenceName: midiToName(reference),
-    detected: detection.best.midi,
-    detectedName: midiToName(detection.best.midi),
+    detected: colpo.midi,
+    detectedName: midiToName(colpo.midi),
     measuredHz: round(detection.measuredHz, 2),
-    detectedHz: round(detection.best.hz, 2),
+    detectedHz: round(colpo.hz, 2),
     score: round(detection.best.score, 5),
     marginDb: round(detection.marginDb, 1),
     octaveMarginDb: round(detection.octaveMarginDb, 1),
-    levelDb: round(levelDb, 1),
-    verdict: verdictOf(reference, detection.best.midi),
-    minCredibility,
-    rangeLow: activeRange.low,
-    rangeHigh: activeRange.high,
-    stability,
+    levelDb: round(colpo.levelDb, 1),
+    verdict: verdictOf(reference, colpo.midi),
+    // The settings in force for this colpo, not the ones at download time.
+    minCredibility: listener.minCredibility,
+    rangeLow: listener.range.low,
+    rangeHigh: listener.range.high,
+    stability: colpo.stability,
     fundamentalPresent: detection.fundamentalPresent,
     fundamentalMagnitude: round(detection.fundamentalMagnitude, 5),
     octaveBelowMagnitude: round(detection.octaveBelowMagnitude, 5),
-    credibility: round(detection.credibility, 2),
-    ambiguous: detection.ambiguous,
+    credibility: round(colpo.credibility, 2),
+    ambiguous: colpo.ambiguous,
     octaveFlipped: detection.octaveFlipped,
     top: detection.candidates.slice(0, 5).map((candidate) => ({
       midi: candidate.midi,
@@ -418,9 +412,9 @@ function record(detection: Detection, levelDb: number, nowMs: number, stability:
       score: round(candidate.score, 5),
     })),
   };
-  log.push(colpo);
+  log.push(entry);
   renderCounters();
-  flashVerdict(colpo);
+  flashVerdict(entry);
 }
 
 function collectNoise(magnitudes: Float32Array, sampleRate: number): void {
@@ -467,51 +461,19 @@ function analyse(nowMs: number): void {
   if (analyser === null || context === null) return;
 
   analyser.getFloatTimeDomainData(timeBuffer);
-  const level = rms(timeBuffer);
-  const levelDb = toDecibels(level, DB_FLOOR);
+  const frame = listener.push(timeBuffer, context.sampleRate, nowMs);
 
-  // Two windows, two questions. The short one hears the attack (2048 samples,
-  // 43 ms); the long one resolves the pitch (341 ms, needed for the bass). The
-  // last ONSET_WINDOW samples of the buffer are the most recent ones.
-  const attackMagnitudes = amplitudeSpectrum(timeBuffer.subarray(FFT_SIZE - ONSET_WINDOW));
-  const magnitudes = amplitudeSpectrum(timeBuffer);
-  const detection = analyseSpectrum(magnitudes, context.sampleRate, {
-    lowMidi: activeRange.low,
-    highMidi: activeRange.high,
-  });
+  drawSpectrum(frame.spectrum, context.sampleRate);
+  showDetection(frame.detection, frame.levelDb);
+  collectNoise(frame.spectrum, context.sampleRate);
 
-  lastLevelDb = levelDb;
-  lastDetection = detection;
-
-  recentWinners.push(detection.best.midi);
-  if (recentWinners.length > 5) recentWinners.shift();
-  let stability = 0;
-  for (let index = recentWinners.length - 1; index >= 0; index--) {
-    if (recentWinners[index] !== detection.best.midi) break;
-    stability++;
-  }
-  lastStability = stability;
-
-  drawSpectrum(magnitudes, context.sampleRate);
-  showDetection(detection, levelDb);
-  collectNoise(magnitudes, context.sampleRate);
-
-  const attack = onset.push(attackMagnitudes, nowMs);
-  if (attack) pendingAttackAt = nowMs;
-
-  onsetsCell.textContent = attack
+  onsetsCell.textContent = frame.struck
     ? 'attacco'
-    : `flusso ${onset.flux.toFixed(3)} / soglia ${Number.isFinite(onset.threshold) ? onset.threshold.toFixed(3) : '—'}` +
-      ` · ${onset.armed ? 'armato' : 'in attesa che il suono scenda'}` +
-      (pendingAttackAt === null ? '' : ' · lettura fra poco');
+    : `flusso ${frame.flux.toFixed(3)} / soglia ${Number.isFinite(frame.threshold) ? frame.threshold.toFixed(3) : '—'}` +
+      ` · ${frame.armed ? 'armato' : 'in attesa che il suono scenda'}` +
+      (frame.reading ? ' · lettura fra poco' : '');
 
-  // Read the pitch after the note has settled, not at the attack: the 341 ms
-  // window is still filling with the silence that came before it.
-  if (pendingAttackAt !== null && nowMs - pendingAttackAt >= READ_DELAY_MS) {
-    const attackAt = pendingAttackAt;
-    pendingAttackAt = null;
-    if (detection.credibility >= minCredibility) record(detection, levelDb, attackAt, stability);
-  }
+  for (const colpo of frame.colpi) record(colpo);
 }
 
 function loop(nowMs: number): void {
@@ -571,7 +533,7 @@ async function start(): Promise<void> {
   analyser = analyserNode;
 
   timeBuffer = new Float32Array(analyserNode.fftSize);
-  onset.reset();
+  listener.resetOnset();
   running = true;
   startButton.disabled = true;
   stopButton.disabled = false;
@@ -583,7 +545,7 @@ async function start(): Promise<void> {
     flashLine.textContent =
       'In silenzio, prima di suonare, premi «Misura il rumore della stanza»: dice quanto è ' +
       'silenziosa (e se c’è ronzio di rete). Un colpo conta solo se la nota vince almeno ' +
-      `${minCredibility.toFixed(1)} volte sulla mediana di tutti i candidati.`;
+      `${listener.minCredibility.toFixed(1)} volte sulla mediana di tutti i candidati.`;
   }
 
   const track = stream.getAudioTracks()[0];
@@ -629,7 +591,7 @@ async function start(): Promise<void> {
 
 function stop(): void {
   running = false;
-  pendingAttackAt = null;
+  listener.clearPending();
   startButton.disabled = false;
   stopButton.disabled = true;
   measureButton.disabled = true;
@@ -647,7 +609,7 @@ function download(): void {
     generatedAt: new Date().toISOString(),
     device: deviceInfo,
     reference,
-    minCredibility,
+    minCredibility: listener.minCredibility,
     detector: {
       fftSize: FFT_SIZE,
       onsetWindow: ONSET_WINDOW,
@@ -675,8 +637,8 @@ stopButton.addEventListener('click', stop);
 downloadButton.addEventListener('click', download);
 
 measureButton.addEventListener('click', () => {
-  if (lastDetection === null) return;
-  record(lastDetection, lastLevelDb, performance.now(), lastStability);
+  const colpo = listener.capture(performance.now());
+  if (colpo !== null) record(colpo);
 });
 
 notesButton.addEventListener('click', () => {
@@ -730,22 +692,21 @@ rangeSelect.addEventListener('change', () => {
   const chosen = RANGES.find((range) => range.id === rangeSelect.value);
   if (chosen === undefined) return;
   activeRange = chosen;
-  onset.reset();
-  recentWinners = [];
+  listener.setRange(chosen.low, chosen.high);
   // A reference outside the range would make every verdict "altra nota".
   setReference(Math.min(chosen.high, Math.max(chosen.low, reference)));
 });
 
 gateInput.addEventListener('input', () => {
-  minCredibility = Number(gateInput.value);
-  gateLabel.textContent = minCredibility.toFixed(1);
+  listener.setMinCredibility(Number(gateInput.value));
+  gateLabel.textContent = listener.minCredibility.toFixed(1);
 });
 
 fillReferenceSelect();
 fillRangeSelect();
 setReference(reference);
 renderCounters();
-gateLabel.textContent = minCredibility.toFixed(1);
+gateLabel.textContent = listener.minCredibility.toFixed(1);
 setDeviceFacts([['stato', 'microfono spento: premi “Attiva il microfono”']]);
 
 // `?autostart=1` exists for the headless check: it lets chromium drive the whole

@@ -8,21 +8,22 @@
  * a short window of spectra around it, and writes what it saw. The pages differ
  * only in the `measure` function and in the name that ends up in the JSON, which
  * is how the two files are told apart by whoever reads them.
+ *
+ * The measurement of one frame — level, the two spectra, the key — is the
+ * listener's (`audio/listener`); what is added here is the protocol around it:
+ * which frames to keep, and when a series around an attack is complete.
  */
-import { analyseSpectrum, type Detection } from '../audio/detect';
-import { amplitudeSpectrum, rms, toDecibels } from '../audio/fft';
+import type { Detection } from '../audio/detect';
+import { DB_FLOOR, FFT_SIZE, ONSET_WINDOW, measureFrame } from '../audio/listener';
 import { HIGHEST_MIDI, LOWEST_MIDI, midiToLabel, midiToName, pitchClass, pianoKeys } from '../audio/notes';
 import { createOnsetDetector } from '../audio/onset';
 
-const FFT_SIZE = 16_384;
-const SHORT_SIZE = 2_048;
 const FRAME_MS = 20;
 /** The long window is recomputed every other frame: it costs ten times the short one. */
 const LONG_EVERY = 2;
 /** Short spectra kept around the attack: 3 before, 14 after — about 340 ms. */
 const PRE_ROLL = 3;
 const SERIES_FRAMES = 14;
-const DB_FLOOR = -100;
 
 export interface ProbeInput {
   reference: number;
@@ -197,10 +198,13 @@ export function runProbe(definition: ProbeDefinition): void {
     lastFrameMs = nowMs;
 
     analyser.getFloatTimeDomainData(timeBuffer);
-    const level = rms(timeBuffer);
-    latestLevelDb = toDecibels(level, DB_FLOOR);
+    frameIndex += 1;
+    const measurement = measureFrame(timeBuffer, context.sampleRate, {
+      withPitch: frameIndex % LONG_EVERY === 0,
+    });
+    latestLevelDb = measurement.levelDb;
 
-    const short = amplitudeSpectrum(timeBuffer.subarray(FFT_SIZE - SHORT_SIZE));
+    const short = measurement.attackSpectrum;
     preRoll.push(short);
     if (preRoll.length > PRE_ROLL) preRoll.shift();
 
@@ -219,10 +223,10 @@ export function runProbe(definition: ProbeDefinition): void {
       }
     }
 
-    frameIndex += 1;
-    if (frameIndex % LONG_EVERY === 0) {
-      latestDetection = analyseSpectrum(amplitudeSpectrum(timeBuffer), context.sampleRate);
-    }
+    // A pitch frame is kept from the moment it is read: the frame that closes a
+    // capture is closed by the detection before it, and the log must keep saying
+    // so instead of quietly getting a fresher one.
+    if (measurement.detection !== null) latestDetection = measurement.detection;
 
     // The attack starts a capture: the series is what both probes measure.
     if (onset.push(short, nowMs) && capture === null) {
@@ -297,7 +301,7 @@ export function runProbe(definition: ProbeDefinition): void {
       probe: definition.name,
       generatedAt: new Date().toISOString(),
       device: { sampleRate: context?.sampleRate ?? 48000, userAgent: navigator.userAgent },
-      settings: { fftSize: FFT_SIZE, shortSize: SHORT_SIZE, frameMs: FRAME_MS, seriesFrames: SERIES_FRAMES },
+      settings: { fftSize: FFT_SIZE, shortSize: ONSET_WINDOW, frameMs: FRAME_MS, seriesFrames: SERIES_FRAMES },
       colpi: log,
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
