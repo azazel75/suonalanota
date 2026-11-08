@@ -39,7 +39,8 @@ confronto fra due versioni del codice: è un confronto fra due esperimenti.
 | **1** · 7 nov | prima versione | tutti gli 88 tasti | 0,0178 (a fine sessione) | 265 | 72% complessivo |
 | **2** · 8 nov | le cinque correzioni | Si1–Re6 (35–86) | **0,0002** (minimo dello slider, rumore mai misurato) | 243 | 59% grezzo, 75% scartando i colpi sotto 0,002 |
 | **3** · 8 nov | parabola limitata | Si1–Re6 | 0,0002 (il rumore misurato dà comunque il minimo) | 245 | **86% senza la regola dell'ottava**, 74% con |
-| **4** · da fare | lettura 150 ms dopo l'attacco, regola spenta | Si1–Re6 | misurata, poi calibrata su `credibility` | | |
+| **4** · 8 nov | lettura 150 ms dopo l'attacco, regola spenta | Si1–Re6 | 0,00024 | 264 | 76% grezzo, **82% con credibilità ≥ 4**, **91% perdonando l'ottava** |
+| **5** · quando si potrà | credibilità ≥ 4, riferimento visibile | Si1–Re6 | criterio sulla credibilità | | |
 
 Il secondo giro non è confrontabile col primo: cambiavano insieme il codice, il range e la soglia. Il
 terzo è confrontabile col secondo per protocollo, ma il codice è cambiato; il quarto è il primo che

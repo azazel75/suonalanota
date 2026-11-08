@@ -75,7 +75,7 @@ interface Colpo {
   levelDb: number;
   verdict: Verdict;
   /** The settings in force for this colpo, not the ones at download time. */
-  gate: number;
+  minCredibility: number;
   rangeLow: number;
   rangeHigh: number;
   stability: number;
@@ -83,7 +83,7 @@ interface Colpo {
   /** The pair of amplitudes that decides the octave, so the rule can be calibrated. */
   fundamentalMagnitude: number;
   octaveBelowMagnitude: number;
-  /** How much the winner stands out from the median candidate: for the gate, later. */
+  /** How much the winner stands out from the median candidate: this is the gate. */
   credibility: number;
   octaveFlipped: boolean;
   top: { midi: number; name: string; score: number }[];
@@ -114,6 +114,7 @@ const marginCell = element<HTMLElement>('margin');
 const octaveCell = element<HTMLElement>('octave');
 const onsetsCell = element<HTMLElement>('onsets');
 const flashLine = element<HTMLDivElement>('flash');
+const refBig = element<HTMLDivElement>('ref-big');
 const spectrumCanvas = element<HTMLCanvasElement>('spectrum');
 const candidatesBody = element<HTMLTableSectionElement>('candidates');
 const referenceSelect = element<HTMLSelectElement>('ref');
@@ -132,7 +133,7 @@ const log: Colpo[] = [];
 
 let reference = 60;
 let activeRange: NoteRange = RANGES[1];
-let gate = Number(gateInput.value);
+let minCredibility = Number(gateInput.value);
 let context: AudioContext | null = null;
 let analyser: AnalyserNode | null = null;
 let stream: MediaStream | null = null;
@@ -387,7 +388,7 @@ function record(detection: Detection, levelDb: number, nowMs: number, stability:
     octaveMarginDb: round(detection.octaveMarginDb, 1),
     levelDb: round(levelDb, 1),
     verdict: verdictOf(reference, detection.best.midi),
-    gate,
+    minCredibility,
     rangeLow: activeRange.low,
     rangeHigh: activeRange.high,
     stability,
@@ -433,17 +434,8 @@ function collectNoise(magnitudes: Float32Array, sampleRate: number): void {
   }
   peaks.sort((left, right) => right.db - left.db);
 
-  // The gate is not a knob: it comes from the room. Score the silence itself and
-  // keep four times what an empty room can produce.
-  const silence = analyseSpectrum(Float32Array.from(mean), sampleRate, {
-    lowMidi: activeRange.low,
-    highMidi: activeRange.high,
-  });
-  const derived = Math.min(0.02, Math.max(0.0002, Number((silence.best.score * 4).toFixed(5))));
-  gate = derived;
-  gateInput.value = String(derived);
-  gateLabel.textContent = derived.toFixed(4);
-
+  // The room's own noise, for the record: how quiet the room was is part of the
+  // measurement, and a peak at 100 Hz is the mains hum of a whole country.
   noiseReport = {
     frames: NOISE_FRAMES,
     medianDb: round(medianDb, 1),
@@ -453,8 +445,7 @@ function collectNoise(magnitudes: Float32Array, sampleRate: number): void {
   noiseOutput.className = '';
   noiseOutput.textContent =
     `rumore mediano ${noiseReport.medianDb} dB · picchi: ` +
-    noiseReport.peaks.map((peak) => `${peak.hz} Hz ${peak.db} dB`).join(', ') +
-    ` · soglia portata a ${derived.toFixed(4)}`;
+    noiseReport.peaks.map((peak) => `${peak.hz} Hz ${peak.db} dB`).join(', ');
 }
 
 function analyse(nowMs: number): void {
@@ -505,7 +496,7 @@ function analyse(nowMs: number): void {
   if (pendingAttackAt !== null && nowMs - pendingAttackAt >= READ_DELAY_MS) {
     const attackAt = pendingAttackAt;
     pendingAttackAt = null;
-    if (detection.best.score >= gate) record(detection, levelDb, attackAt, stability);
+    if (detection.credibility >= minCredibility) record(detection, levelDb, attackAt, stability);
   }
 }
 
@@ -576,9 +567,9 @@ async function start(): Promise<void> {
   if (noiseReport === null) {
     flashLine.className = 'warn';
     flashLine.textContent =
-      'Prima di suonare, in silenzio, premi «Misura il rumore della stanza»: è quello che fissa ' +
-      'la soglia. Senza quella misura la pagina registra anche il rumore, e i colpi si riempiono ' +
-      'di note che nessuno ha suonato.';
+      'In silenzio, prima di suonare, premi «Misura il rumore della stanza»: dice quanto è ' +
+      'silenziosa (e se c’è ronzio di rete). Un colpo conta solo se la nota vince almeno ' +
+      `${minCredibility.toFixed(1)} volte sulla mediana di tutti i candidati.`;
   }
 
   const track = stream.getAudioTracks()[0];
@@ -642,7 +633,7 @@ function download(): void {
     generatedAt: new Date().toISOString(),
     device: deviceInfo,
     reference,
-    gate,
+    minCredibility,
     detector: {
       fftSize: FFT_SIZE,
       onsetWindow: ONSET_WINDOW,
@@ -694,10 +685,24 @@ function fillRangeSelect(): void {
 }
 
 function setReference(midi: number): void {
+  const changed = Math.min(HIGHEST_MIDI, Math.max(LOWEST_MIDI, midi)) !== reference;
   reference = Math.min(HIGHEST_MIDI, Math.max(LOWEST_MIDI, midi));
   referenceSelect.value = String(reference);
   referenceDetail.textContent =
     `${midiToLabel(reference)} · MIDI ${reference} · ${midiToHz(reference).toFixed(1)} Hz`;
+
+  // The change has to be visible where the eye is: the big readout is what one
+  // watches while playing, and a reference that did not move is a whole set of
+  // colpi scored against the wrong note (measured: three D4 under a D#4
+  // reference, eleven seconds apart).
+  refBig.textContent = `riferimento: ${midiToLabel(reference)}`;
+  if (changed) {
+    refBig.className = 'ref changed';
+    window.setTimeout(() => {
+      refBig.className = 'ref';
+    }, 600);
+  }
+
   // The log is never cleared: every colpo carries its own reference, and the
   // table below groups them by it. Testing ten notes in a row is the point.
   flashLine.textContent = '';
@@ -718,15 +723,15 @@ rangeSelect.addEventListener('change', () => {
 });
 
 gateInput.addEventListener('input', () => {
-  gate = Number(gateInput.value);
-  gateLabel.textContent = gate.toFixed(4);
+  minCredibility = Number(gateInput.value);
+  gateLabel.textContent = minCredibility.toFixed(1);
 });
 
 fillReferenceSelect();
 fillRangeSelect();
 setReference(reference);
 renderCounters();
-gateLabel.textContent = gate.toFixed(4);
+gateLabel.textContent = minCredibility.toFixed(1);
 setDeviceFacts([['stato', 'microfono spento: premi “Attiva il microfono”']]);
 
 // `?autostart=1` exists for the headless check: it lets chromium drive the whole
