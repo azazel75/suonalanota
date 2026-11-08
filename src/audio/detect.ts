@@ -25,12 +25,13 @@
  *    of the frame's energy — a real string does, a sympathetically resonant one
  *    does not.
  *
- * The octave rule is **off by default**, and that is a measurement, not caution:
- * on 245 colpi of a grand piano it was neutral overall — it repaired the bass,
- * where the fundamental is inaudible, and broke the treble, where the string an
- * octave below resonates — and it was harmful on unsettled frames, where it
- * dragged room noise down an octave. Its inputs are still logged, so the
- * decision can be re-taken on data instead of opinion.
+ * The octave rule is **on by default**, and that is a measurement too. Its first
+ * version (presence of the fundamental) was neutral overall and harmful on
+ * unsettled frames, so it was turned off; the odd-partial version was then
+ * calibrated on two dedicated probes and separated the two cases cleanly
+ * (docs/adr/0009). Where the evidence falls inside the measured overlap the
+ * detector still guesses — it has to name a note — but the exercise does not
+ * judge that colpo: it asks the player to repeat it.
  */
 import { HIGHEST_MIDI, LOWEST_MIDI, midiToHz, pitchClass } from './notes';
 
@@ -51,16 +52,28 @@ export const OCTAVE_TIE_DB = 6;
  */
 export const OCTAVE_AMBIGUITY_DB = 3;
 
-/** The octave below is chosen only when its fundamental is at least this share of
- * the frame's RMS.
+/**
+ * The octave below is chosen only when its **odd partials** are a real fraction of
+ * what the octave above carries on its fundamental.
  *
- * Calibrated on a grand piano, 245 colpi (docs/adr/0006): the flips that were
- * right had a lower fundamental at a median 0.072 of the frame RMS; the flips
- * that were wrong — a string of the octave below resonating by sympathy, which
- * is what a piano does — sat at 0.004. A share of the energy is scale-free, so
- * it does not move when the microphone gain changes; an absolute amplitude does.
+ * This is the one discriminant that worked, measured on a grand piano
+ * (docs/adr/0009): a key that was pressed has its partials 3, 5 and 7; a string
+ * resonating by sympathy, driven by the octave above, vibrates in its *even* mode
+ * and has none. Measured ratio: 0.38-0.60 when the octave below was really played,
+ * at most 0.214 when it was only resonating. The threshold sits between the two.
+ *
+ * The earlier attempts — presence of the fundamental, its share of the frame RMS —
+ * failed because a resonating string *does* put energy on its fundamental.
  */
-export const OCTAVE_EVIDENCE_SHARE = 0.06;
+export const OCTAVE_ODD_EVIDENCE = 0.3;
+
+/**
+ * The band where the two hypotheses overlap: the highest ratio measured on a
+ * resonating string (0.214) and the lowest on a string that was really pressed
+ * (0.38). Inside it the detector still guesses — it has to name a note — but the
+ * exercise does not judge: the player is asked to repeat.
+ */
+export const OCTAVE_ODD_UNCERTAIN = { low: 0.2, high: 0.4 };
 
 /** A fundamental counts as present when it stands this far above the noise floor. */
 export const NOISE_FACTOR = 20;
@@ -90,10 +103,8 @@ export interface DetectionOptions {
   lowMidi?: number;
   /** Highest key the exercise can ask for. */
   highMidi?: number;
-  /** When false the octave rule is skipped. Off by default: see below. */
+  /** When false the octave rule is skipped: the colpo is then always judged as it lands. */
   octaveEvidence?: boolean;
-  /** RMS of the analysed frame; derived from the spectrum when not given. */
-  frameRms?: number;
 }
 
 export interface Detection {
@@ -117,6 +128,8 @@ export interface Detection {
   octaveBelowMagnitude: number;
   /** Winner's score over the median score of the whole range: how much it stands out. */
   credibility: number;
+  /** Odd partials of the octave below over the winner's fundamental; -1 when not computable. */
+  octaveEvidenceRatio: number;
   /** True when the winner cannot be told apart from its octave: do not judge, ask again. */
   ambiguous: boolean;
   /** True when the octave rule moved the winner one octave down. */
@@ -245,6 +258,29 @@ export function scoreKey(
   return total / WEIGHT_SUM;
 }
 
+/** Amplitude of the k-th partial of a key. */
+export function partialAmplitude(
+  magnitudes: Float32Array,
+  sampleRate: number,
+  midi: number,
+  k: number,
+): number {
+  const width = binWidth(sampleRate, magnitudes);
+  const hz = midiToHz(midi) * k;
+  if (hz >= sampleRate / 2) return 0;
+  const radius = Math.max(1, Math.round((hz * PARTIAL_TOLERANCE) / width));
+  return peakMagnitude(magnitudes, hz / width, radius);
+}
+
+/** Mean amplitude of partials 3, 5 and 7: what a resonating string does not have. */
+export function oddPartials(magnitudes: Float32Array, sampleRate: number, midi: number): number {
+  return (
+    partialAmplitude(magnitudes, sampleRate, midi, 3) +
+    partialAmplitude(magnitudes, sampleRate, midi, 5) +
+    partialAmplitude(magnitudes, sampleRate, midi, 7)
+  ) / 3;
+}
+
 /** Whether two MIDI numbers are the same key of the piano. */
 export function sameKey(a: number, b: number): boolean {
   return Math.round(a) === Math.round(b);
@@ -269,7 +305,7 @@ export function analyseSpectrum(
 ): Detection {
   const lowMidi = options.lowMidi ?? LOWEST_MIDI;
   const highMidi = options.highMidi ?? HIGHEST_MIDI;
-  const useOctaveEvidence = options.octaveEvidence ?? false;
+  const useOctaveEvidence = options.octaveEvidence ?? true;
 
   const candidates: Candidate[] = [];
   const byMidi = new Map<number, number>();
@@ -285,22 +321,21 @@ export function analyseSpectrum(
   const present = (magnitude: number): boolean =>
     magnitude > ABSOLUTE_PRESENCE && magnitude > floor * NOISE_FACTOR;
 
-  const frameRms = options.frameRms ?? spectrumRms(magnitudes);
-
   let best = candidates[0];
   let octaveFlipped = false;
+  let evidenceRatio = -1;
 
-  if (useOctaveEvidence && frameRms > 0) {
+  if (useOctaveEvidence) {
     const lowerMidi = best.midi - 12;
     const lowerScore = byMidi.get(lowerMidi);
     if (lowerScore !== undefined) {
       const tie = decibelsRatio(best.score, lowerScore) <= OCTAVE_TIE_DB;
-      const lowerFundamental = fundamentalOf(magnitudes, sampleRate, lowerMidi);
-      // A share of the frame's energy, not an absolute amplitude: a real string
-      // puts a real part of the sound on its fundamental, a sympathetic resonance
-      // puts a trace. An absolute threshold would move with the microphone gain.
-      const evidence = lowerFundamental.magnitude >= OCTAVE_EVIDENCE_SHARE * frameRms;
-      if (tie && evidence) {
+      // The odd partials of the octave below are the evidence: a pressed string
+      // has them, a string resonating in its even mode has not.
+      const upperFundamental = fundamentalOf(magnitudes, sampleRate, best.midi).magnitude;
+      const odd = oddPartials(magnitudes, sampleRate, lowerMidi);
+      if (upperFundamental > 0) evidenceRatio = odd / upperFundamental;
+      if (tie && evidenceRatio >= OCTAVE_ODD_EVIDENCE) {
         const lower = candidates.find((candidate) => candidate.midi === lowerMidi);
         if (lower !== undefined) {
           best = lower;
@@ -331,7 +366,13 @@ export function analyseSpectrum(
     fundamentalMagnitude: fundamental.magnitude,
     octaveBelowMagnitude: below?.magnitude ?? 0,
     credibility: typical > 0 ? best.score / typical : 99,
-    ambiguous: octaveMarginDb <= OCTAVE_AMBIGUITY_DB,
+    octaveEvidenceRatio: evidenceRatio,
+    // A tie is only a tie when the evidence cannot break it: inside the measured
+    // overlap, or when it could not be computed at all.
+    ambiguous:
+      octaveMarginDb <= OCTAVE_AMBIGUITY_DB &&
+      (evidenceRatio < 0 ||
+        (evidenceRatio > OCTAVE_ODD_UNCERTAIN.low && evidenceRatio < OCTAVE_ODD_UNCERTAIN.high)),
     octaveFlipped,
   };
 }

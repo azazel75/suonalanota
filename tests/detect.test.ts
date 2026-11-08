@@ -261,38 +261,54 @@ describe('the onset detector against a real-shaped note', () => {
 });
 
 describe('the octave rule', () => {
-  // Only the even partials, with a fundamental much weaker than the second: the
-  // shape a bass note takes when the microphone barely hears its fundamental.
-  // Without the rule the sum prefers the octave above.
-  function weakFundamental(fundamental: number): Partial[] {
-    return [
-      { hz: midiToHz(A2), amplitude: fundamental },
-      { hz: midiToHz(A2) * 2, amplitude: 1 },
-      { hz: midiToHz(A2) * 4, amplitude: 0.5 },
-      { hz: midiToHz(A2) * 6, amplitude: 0.25 },
-    ];
+  /** The rule's real input is a spectrum: build one from the measured shape of B1. */
+  function spectrumWith(peaks: { hz: number; amplitude: number }[]): Float32Array {
+    const size = 8192;
+    const width = SAMPLE_RATE / (size * 2);
+    const magnitudes = new Float32Array(size);
+    for (const peak of peaks) {
+      const bin = Math.round(peak.hz / width);
+      magnitudes[bin] = peak.amplitude;
+      magnitudes[bin - 1] = peak.amplitude / 2;
+      magnitudes[bin + 1] = peak.amplitude / 2;
+    }
+    return magnitudes;
   }
 
-  test('the octave below is chosen when its fundamental carries a share of the energy', () => {
-    const magnitudes = amplitudeSpectrum(synthesise(weakFundamental(0.2)));
+  /** Si1 as the measurements saw it: fundamental lost, partials 2..8 around 0.1. */
+  function bassNote(odd: number): Float32Array {
+    const f0 = midiToHz(35);
+    return spectrumWith([
+      { hz: f0 * 1, amplitude: 0.005 },
+      { hz: f0 * 2, amplitude: 0.2 },
+      { hz: f0 * 3, amplitude: odd },
+      { hz: f0 * 4, amplitude: 0.13 },
+      { hz: f0 * 5, amplitude: odd },
+      { hz: f0 * 6, amplitude: 0.13 },
+      { hz: f0 * 7, amplitude: odd },
+      { hz: f0 * 8, amplitude: 0.13 },
+    ]);
+  }
 
-    const withoutRule = analyseSpectrum(magnitudes, SAMPLE_RATE);
+  test('the octave below is chosen when it has its odd partials', () => {
+    // Measured ratio for a string that was really pressed: 0.38-0.60 of what the
+    // octave above carries on its fundamental. Without the rule the sum prefers
+    // the octave above, because the fundamental of Si1 is lost in the microphone.
+    const magnitudes = bassNote(0.08);
+    const withoutRule = analyseSpectrum(magnitudes, SAMPLE_RATE, { octaveEvidence: false });
     const withRule = analyseSpectrum(magnitudes, SAMPLE_RATE, { octaveEvidence: true });
 
-    // Canary: without the rule this is what the detector says, and why the rule
-    // exists. It is off by default on the measured evidence of ADR 0006.
-    expect(withoutRule.best.midi).toBe(A2 + 12);
-    expect(withRule.best.midi).toBe(A2);
+    expect(withoutRule.best.midi).toBe(35 + 12);
+    expect(withRule.best.midi).toBe(35);
     expect(withRule.octaveFlipped).toBe(true);
   });
 
-  test('but it refuses to guess when the fundamental is only a trace', () => {
-    // Calibrated on a grand piano (docs/adr/0006): the flips that were right had
-    // the lower fundamental at 0.07 of the frame's RMS, the wrong ones — a string
-    // resonating by sympathy — at 0.004. At 2% the rule must stay its hand.
-    const magnitudes = amplitudeSpectrum(synthesise(weakFundamental(0.02)));
+  test('but not when it has only the even ones, which is what a resonance has', () => {
+    // The same spectrum with partials 3, 5 and 7 silent: a string vibrating in its
+    // even mode. Measured ratio for those: at most 0.214, below the threshold.
+    const magnitudes = bassNote(0);
     const detection = analyseSpectrum(magnitudes, SAMPLE_RATE, { octaveEvidence: true });
-    expect(detection.best.midi).toBe(A2 + 12);
+    expect(detection.best.midi).toBe(35 + 12);
     expect(detection.octaveFlipped).toBe(false);
   });
 
@@ -326,19 +342,36 @@ describe('the search range', () => {
 });
 
 describe('the ambiguity of the octave', () => {
-  test('a note whose octave scores within 3 dB is not judged, it is asked again', () => {
-    // Exactly the shape that produced the octave errors on the grand piano: the
-    // winner and its octave differ by a couple of dB, and no rule can tell them
-    // apart. The answer is not to guess: it is to make the player repeat.
-    const partials: Partial[] = [
-      { hz: midiToHz(A2), amplitude: 0.2 },
-      { hz: midiToHz(A2) * 2, amplitude: 1 },
-      { hz: midiToHz(A2) * 4, amplitude: 0.5 },
-      { hz: midiToHz(A2) * 6, amplitude: 0.25 },
-    ];
-    const detection = analyseSpectrum(amplitudeSpectrum(synthesise(partials)), SAMPLE_RATE);
+  /** The same shape as the octave-rule tests: Si1 with partials 3 5 7 at a chosen level. */
+  function bassSpectrum(odd: number): Float32Array {
+    const size = 8192;
+    const width = SAMPLE_RATE / (size * 2);
+    const magnitudes = new Float32Array(size);
+    const f0 = midiToHz(35);
+    for (const [k, amplitude] of [[1, 0.005], [2, 0.2], [3, odd], [4, 0.13], [5, odd], [6, 0.13], [7, odd], [8, 0.13]] as [number, number][]) {
+      const bin = Math.round((f0 * k) / width);
+      magnitudes[bin] = amplitude;
+      magnitudes[bin - 1] = amplitude / 2;
+      magnitudes[bin + 1] = amplitude / 2;
+    }
+    return magnitudes;
+  }
+
+  test('inside the measured overlap the colpo is asked again, not judged', () => {
+    // Odd partials at 0.3 of the winner's fundamental: between the highest value
+    // measured on a resonance (0.214) and the lowest on a pressed string (0.38).
+    const detection = analyseSpectrum(bassSpectrum(0.06), SAMPLE_RATE, { octaveEvidence: true });
     expect(detection.octaveMarginDb).toBeLessThan(3);
+    expect(detection.octaveEvidenceRatio).toBeCloseTo(0.3, 1);
     expect(detection.ambiguous).toBe(true);
+  });
+
+  test('outside it the detector decides, and the colpo is judged', () => {
+    const decisive = analyseSpectrum(bassSpectrum(0.1), SAMPLE_RATE, { octaveEvidence: true });
+    expect(decisive.ambiguous).toBe(false);
+    // Con abbastanza parziali dispari la nota grave vince già da sola: qui conta che
+    // il verdetto sia quello giusto e che non si chieda di ripetere.
+    expect(decisive.best.midi).toBe(35);
   });
 
   test('a note that wins clearly is judged', () => {

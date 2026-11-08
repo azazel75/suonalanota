@@ -478,7 +478,6 @@ function analyse(nowMs: number): void {
   const detection = analyseSpectrum(magnitudes, context.sampleRate, {
     lowMidi: activeRange.low,
     highMidi: activeRange.high,
-    frameRms: level,
   });
 
   lastLevelDb = levelDb;
@@ -653,7 +652,7 @@ function download(): void {
       fftSize: FFT_SIZE,
       onsetWindow: ONSET_WINDOW,
       readDelayMs: READ_DELAY_MS,
-      octaveEvidence: false,
+      octaveEvidence: true,
       partialTolerance: 0.02,
       harmonics: 8,
     },

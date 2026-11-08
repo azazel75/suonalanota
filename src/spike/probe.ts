@@ -221,9 +221,7 @@ export function runProbe(definition: ProbeDefinition): void {
 
     frameIndex += 1;
     if (frameIndex % LONG_EVERY === 0) {
-      latestDetection = analyseSpectrum(amplitudeSpectrum(timeBuffer), context.sampleRate, {
-        frameRms: rms(timeBuffer),
-      });
+      latestDetection = analyseSpectrum(amplitudeSpectrum(timeBuffer), context.sampleRate);
     }
 
     // The attack starts a capture: the series is what both probes measure.

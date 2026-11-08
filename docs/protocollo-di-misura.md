@@ -90,9 +90,15 @@ può sbagliare nota mentre si suona, e il selettore fa parte della misura.
 Con una sola classe di note il discriminante non si può valutare: uno che rispondesse sempre "è
 risonanza" sarebbe perfetto su metà dei dati. Scaricare i due JSON separatamente.
 
-Cosa si guarda: nel primo il rapporto dispari/pari dell'ottava sotto (vicino a zero = risonanza);
-nel secondo il ritardo in ms fra la salita della banda grave e quella acuta (positivo = risonanza,
-vicino a zero = corda premuta). Entrambi i file contengono i valori grezzi, non solo il verdetto.
+Cosa si guarda: nel primo la media delle parziali dispari dell'ottava sotto, divisa per la
+fondamentale della nota letta; nel secondo il ritardo in ms fra la salita della banda grave e quella
+acuta.
+
+**Esito del primo giro di sonde (8 nov)**: la sonda `dispari` separa (0,32–0,60 quando la corda grave
+era premuta, ≤ 0,21 quando non lo era, su 7 e 35 colpi), e la regola del rilevatore ora la usa. La
+sonda `salita` non separa: entrambe le classi hanno ritardo mediano 0 ms, perché la mezza salita si
+misura rispetto al massimo della banda e una banda di solo rumore ha comunque un massimo. Vedi ADR
+0009.
 
 ## Cosa si conserva
 

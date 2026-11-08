@@ -46,7 +46,10 @@ Solo microfono: il pianoforte acustico e iPad escludono il MIDI, e il caso d'uso
 - la ricerca è limitata al **range dell'esercizio**, mai tutti gli 88 tasti;
 - un colpo entra solo se la nota vince **≥ 4 volte** sulla mediana dei candidati (credibilità: numero
   puro, non dipende dal volume del telefono);
-- se la nota e la sua ottava sono a **≤ 3 dB** il colpo è ambiguo: si chiede di ripetere;
+- l'ottava si decide con le **parziali dispari** dell'ottava sotto: una corda premuta le ha, una che
+  risuona no (0,32–0,60 contro ≤ 0,21, misurato);
+- se l'evidenza cade nella banda **0,2–0,4** — o non è calcolabile — il colpo è ambiguo: non si
+  giudica, si chiede di ripetere;
 - il **soundcheck** misura il compasso e la portata udibile del dispositivo, e può solo restringere i
   range.
 
@@ -66,9 +69,9 @@ registrata per ogni colpo, così un errore del rilevatore si distingue da un err
 
 ## Cosa non sappiamo
 
-- **L'ottava**: il 10% circa dei colpi è ambiguo e viene rimandato all'allievo. Due sonde pronte
-  (`/spike/dispari.html`, `/spike/salita.html`) misurano se si può fare meglio — parziali dispari e
-  tempo di salita — e vanno eseguite quando c'è il pianoforte.
+- **L'ottava** è decisa dalle parziali dispari su una sessantina di colpi di un solo strumento: è il
+  criterio migliore che abbiamo, non una certezza. La sonda del tempo di salita
+  (`/spike/salita.html`) non discrimina e resta nel repository come negativo documentato.
 - **Verticale e tastiera elettronica**: mai misurati. La previsione è "acuti meglio, grave peggio"
   sulle elettroniche.
 - Il dominio di pubblicazione.
