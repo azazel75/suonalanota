@@ -88,13 +88,19 @@ export function runProbe(definition: ProbeDefinition): void {
   const stopButton = element<HTMLButtonElement>('stop');
   const referenceSelect = element<HTMLSelectElement>('ref');
   const referenceBig = element<HTMLDivElement>('ref-big');
+  const referenceDown = document.getElementById('ref-down') as HTMLButtonElement | null;
+  const referenceUp = document.getElementById('ref-up') as HTMLButtonElement | null;
   const lastReadout = element<HTMLPreElement>('last');
   const rows = element<HTMLTableSectionElement>('rows');
   const downloadButton = element<HTMLButtonElement>('download');
   const hint = element<HTMLParagraphElement>('hint');
 
+  // The picker is part of the measurement: only the notes of the protocol, and the
+  // two arrows step through that list instead of through semitones.
+  const notes = definition.notes ?? pianoKeys();
+
   const log: Entry[] = [];
-  let reference = 60;
+  let reference = notes[0] ?? 60;
   let context: AudioContext | null = null;
   let analyser: AnalyserNode | null = null;
   let stream: MediaStream | null = null;
@@ -110,7 +116,7 @@ export function runProbe(definition: ProbeDefinition): void {
 
   // Only the notes of the protocol, so that a wrong pick cannot happen while
   // playing: the picker is part of the measurement.
-  for (const midi of definition.notes ?? pianoKeys()) {
+  for (const midi of notes) {
     const option = document.createElement('option');
     option.value = String(midi);
     option.textContent = midiToLabel(midi);
@@ -118,9 +124,31 @@ export function runProbe(definition: ProbeDefinition): void {
   }
 
   function setReference(midi: number): void {
+    const changed = midi !== reference;
     reference = Math.min(HIGHEST_MIDI, Math.max(LOWEST_MIDI, midi));
     referenceSelect.value = String(reference);
     referenceBig.textContent = `riferimento: ${midiToLabel(reference)}`;
+
+    if (changed) {
+      referenceBig.className = 'ref changed';
+      window.setTimeout(() => {
+        referenceBig.className = 'ref';
+      }, 600);
+    }
+
+    const index = notes.indexOf(reference);
+    if (referenceDown !== null) referenceDown.disabled = index === 0;
+    if (referenceUp !== null) referenceUp.disabled = index === notes.length - 1;
+  }
+
+  function step(delta: number): void {
+    const index = notes.indexOf(reference);
+    if (index < 0) {
+      setReference(notes[0] ?? reference);
+      return;
+    }
+    const next = Math.min(notes.length - 1, Math.max(0, index + delta));
+    setReference(notes[next]);
   }
 
   function verdictOf(expected: number, detected: number): Entry['verdict'] {
@@ -284,6 +312,8 @@ export function runProbe(definition: ProbeDefinition): void {
   }
 
   referenceSelect.addEventListener('change', () => setReference(Number(referenceSelect.value)));
+  referenceDown?.addEventListener('click', () => step(-1));
+  referenceUp?.addEventListener('click', () => step(1));
   startButton.addEventListener('click', () => void start());
   stopButton.addEventListener('click', stop);
   downloadButton.addEventListener('click', download);
