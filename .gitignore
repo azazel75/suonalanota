@@ -5,3 +5,4 @@ result
 .scratch/
 .agent-shell/
 *.log
+result-*

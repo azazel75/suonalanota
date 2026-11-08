@@ -28,8 +28,8 @@ con i colpi:
                     "modalita": "casuale", "preset": null },
   "soundcheck": { "range_misurato": false, "range_effettivo": null, "nota": "…" },
   "fine": { "motivo": "tempo", "secondi": 60 },
-  "punteggio": { "centrate": 12, "sbagliate": 3, "saltate": 2, "totale": 17, "note_al_minuto": 8.5 },
-  "bersagli": [ { "tasto": 60, "nome": "Do4", "verdetto": "centrata", "millisecondi": 1234,
+  "punteggio": { "corrette": 12, "sbagliate": 3, "saltate": 2, "totale": 17, "note_al_minuto": 8.5 },
+  "bersagli": [ { "tasto": 60, "nome": "Do4", "verdetto": "corretta", "millisecondi": 1234,
                   "inizio_ms": 0, "fine_ms": 1234, "colpi": [ { "altezza": 60, "ambiguo": false,
                   "credibilita": 9.2, "…": "…" } ] } ]
 }
@@ -44,6 +44,11 @@ misurata e la nota cambierà di conseguenza.
 
 **La `versione` si alza quando un campo cambia significato, non quando se ne aggiunge uno.** Aggiungere
 un campo non rompe chi legge il vecchio; cambiare il senso di `verdetto` sì.
+
+**Il verdetto si chiama però «corretta» dal ticket 14** (`docs/adr/0014`), e il campo `centrate` si
+chiama `corrette`. La versione resta 1: il formato non era mai uscito dal repository, quindi il primo
+file che qualcuno conserverà è già scritto così. Se un file di questo periodo circolasse con i nomi
+vecchi, sarebbe indistinguibile — ma non è mai circolato.
 
 **Il log c'è sempre, anche quando non è stato chiuso nessun bersaglio.** Una sessione brevissima può
 finire col primo bersaglio ancora a schermo: i bersagli sono zero, ma impostazioni e punteggio sono

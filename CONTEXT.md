@@ -70,7 +70,7 @@ _Avoid_: risultato, esito, punteggio
 
 **Ottava**:
 L'intervallo fra una nota e la successiva con lo stesso nome. Fa parte della risposta: suonare il Do
-un'ottava sotto non è centrare il bersaglio.
+un'ottava sotto non è una risposta corretta.
 _Avoid_: registro, altezza
 
 **Range dell'esercizio**:
@@ -78,9 +78,11 @@ L'intervallo fra la nota minima e la massima che una sessione può chiedere. Lim
 sia la ricerca del rilevatore: fuori da lì non esiste candidato.
 _Avoid_: estensione, portata
 
-**Centrata**:
-Il verdetto di un bersaglio risolto da un colpo che contiene l'altezza esatta richiesta.
-_Avoid_: giusta, corretta, ok
+**Corretta**:
+Il verdetto di un bersaglio risolto da un colpo che contiene l'altezza esatta richiesta. Si chiamava
+«centrata» fino al ticket 14: il gergo del tiro al bersaglio è rimasto fuori, perché accanto a
+«sbagliata» faceva due mestieri diversi.
+_Avoid_: giusta, ok, centrata
 
 **Sbagliata**:
 Il verdetto di un bersaglio chiuso da un numero di colpi errati, o dal tempo scaduto dopo almeno

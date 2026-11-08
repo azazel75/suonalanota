@@ -215,7 +215,7 @@ describe('the log of a session', () => {
 
     expect(parsed.bersagli.map((target: any) => [target.tasto, target.nome, target.verdetto]))
       .toEqual([
-        [60, 'Do4', 'centrata'],
+        [60, 'Do4', 'corretta'],
         [62, 'Re4', 'sbagliata'],
         [64, 'Mi4', 'saltata'],
       ]);
@@ -230,7 +230,7 @@ describe('the log of a session', () => {
     expect(parsed.bersagli[1].colpi[0].altezza).toBe(61);
     expect(parsed.bersagli[0].colpi[0].altezza).toBe(60);
     expect(parsed.punteggio).toEqual({
-      centrate: 1,
+      corrette: 1,
       sbagliate: 1,
       saltate: 1,
       totale: 3,
@@ -252,7 +252,7 @@ describe('the log of a session', () => {
       expect.objectContaining({ altezza: 60, ambiguo: true }),
     ]);
     expect(parsed.punteggio).toEqual({
-      centrate: 0,
+      corrette: 0,
       sbagliate: 0,
       saltate: 1,
       totale: 1,

@@ -3,7 +3,7 @@
 Esercizi di lettura del pentagramma per ragazzi di 10-13 anni: l'applicazione mostra una nota alla
 volta, in chiave di violino e di basso, ascolta il pianoforte dal microfono e passa alla nota
 successiva quando sente il tasto giusto o quando scade il tempo. Alla fine dà il punteggio:
-quante centrate, quante sbagliate, quante saltate.
+quante corrette, quante sbagliate, quante saltate.
 
 **Stato: la prova e il riepilogo.** La pagina è un wizard: prima si sceglie la prova — range con
 minimo e massimo, durata, tempo per bersaglio, tetto ai colpi, sequenza casuale, da preset o dalla
@@ -164,7 +164,7 @@ attacco → verdetto < 400 ms. Il registro grave (A0-B2) si misura e si riporta,
 - [CONTEXT.md](CONTEXT.md) — il glossario: bersaglio, colpo, verdetto, portata udibile.
 - [0001](docs/adr/0001-ascolto-solo-microfono.md) — solo microfono, niente MIDI.
 - [0002](docs/adr/0002-pwa-statica-senza-backend.md) — PWA statica, classifica sul dispositivo.
-- [0003](docs/adr/0003-verdetto-per-modo-di-avanzamento.md) — centrata / sbagliata / saltata.
+- [0003](docs/adr/0003-verdetto-per-modo-di-avanzamento.md) — i tre verdetti (oggi: corretta / sbagliata / saltata).
 - [0004](docs/adr/0004-rilevatore-dopo-il-primo-spike.md) — il rilevatore dopo il primo spike.
 - [0005](docs/adr/0005-la-parabola-e-la-risonanza.md) — la parabola e la risonanza.
 - [0006](docs/adr/0006-leggere-dopo-l-attacco.md) — leggere dopo l'attacco.

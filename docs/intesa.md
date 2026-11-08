@@ -7,7 +7,7 @@ e non fra mille righe.
 
 Un ragazzo di 10-13 anni legge una nota sul pentagramma e la suona. Un telefono ascolta il pianoforte
 dal microfono, decide se il tasto premuto è quello giusto, e passa alla nota dopo quando lo è o
-quando il tempo è scaduto. Alla fine un punteggio: centrate, sbagliate, saltate.
+quando il tempo è scaduto. Alla fine un punteggio: corrette, sbagliate, saltate.
 
 Niente tastiera sullo schermo (la mappa rigo→tasto è il compito), niente suono di riferimento durante
 l'esercizio, niente backend, niente dati che escono dal dispositivo.
@@ -19,7 +19,7 @@ l'esercizio, niente backend, niente dati che escono dal dispositivo.
 - **Colpo ambiguo** — un colpo in cui la nota e la sua ottava restano indistinguibili: pareggio entro
   3 dB *e* evidenza delle parziali dispari dentro la banda 0,2–0,4, oppure evidenza non calcolabile.
   Non si giudica, si chiede di ripetere, e non costa un tentativo.
-- **Verdetto** — centrata, sbagliata, saltata. Tre valori, non due.
+- **Verdetto** — corretta, sbagliata, saltata. Tre valori, non due.
 
 ## I numeri
 

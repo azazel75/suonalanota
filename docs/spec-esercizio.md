@@ -66,7 +66,7 @@ Tre modi, scelti prima di iniziare:
 
 ## Verdetti e limiti
 
-Il verdetto di un bersaglio è **centrata**, **sbagliata** o **saltata** (matrice di ADR 0003,
+Il verdetto di un bersaglio è **corretta**, **sbagliata** o **saltata** (matrice di ADR 0003,
 aggiornata da ADR 0008). Ma prima del verdetto c'è un caso che verdetto non è: il **colpo ambiguo**,
 quello in cui la nota vincente e la sua ottava stanno a meno di 3 dB e il rilevatore non può
 scegliere. Un colpo ambiguo **non costa un tentativo**: l'applicazione chiede di ripetere la nota,
@@ -77,14 +77,14 @@ colpi errati esiste, è configurabile e di default è spento.
 
 | evento | verdetto |
 | --- | --- |
-| un colpo contiene l'altezza esatta del bersaglio | centrata |
+| un colpo contiene l'altezza esatta del bersaglio | corretta |
 | tempo scaduto, con almeno un colpo errato non ambiguo | sbagliata |
 | tempo scaduto, con soli colpi ambigui o senza colpi | saltata |
 | tetto dei colpi errati raggiunto (se configurato) | sbagliata |
 | la sessione finisce con il bersaglio a schermo | non conteggiata |
 
 Nessun suono di riferimento viene emesso durante l'esercizio: il feedback sonoro è un beep neutro,
-quello visivo un lampeggio verde sulla centrata, rosso sull'errore, e per un colpo ambiguo nessuno
+quello visivo un lampeggio verde sulla corretta, rosso sull'errore, e per un colpo ambiguo nessuno
 dei due — solo l'invito a ripetere.
 
 
@@ -107,7 +107,7 @@ dopo circa 5 secondi di silenzio assoluto, il messaggio compare al posto del con
 
 ## Punteggio e classifica
 
-A fine sessione: centrate, sbagliate, saltate, totale, note al minuto, ed elenco delle note
+A fine sessione: corrette, sbagliate, saltate, totale, note al minuto, ed elenco delle note
 sbagliate. Durante la sessione un contatore discreto, non un HUD.
 
 ## Classifica
@@ -116,7 +116,7 @@ sbagliate. Durante la sessione un contatore discreto, non un HUD.
 
 - **Una riga per ragazzo**, non un elenco di tentativi: si tiene il run col punteggio migliore di
   quel nickname. Un ragazzo che gioca cinque volte compare una volta, con la sua prova migliore.
-- Ordine: centrate, poi note al minuto, poi la data più recente.
+- Ordine: corrette, poi note al minuto, poi la data più recente.
 - **Nickname**: chiesto alla fine di ogni esercizio, con dentro il nome dell'ultimo run — chi ha già
   giocato conferma e basta. Se il campo resta vuoto il nome è `utente1`, `utente2`, … il primo libero.
 - La classifica è **della configurazione in corso**: range, durata, timeout e modalità sono la chiave.

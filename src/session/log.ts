@@ -156,7 +156,7 @@ export interface SessionLog {
   };
   readonly fine: { readonly motivo: string | null; readonly secondi: number };
   readonly punteggio: {
-    readonly centrate: number;
+    readonly corrette: number;
     readonly sbagliate: number;
     readonly saltate: number;
     readonly totale: number;
@@ -176,7 +176,7 @@ export interface SessionLog {
 
 /** The three verdicts as the glossary names them, not as the engine spells them. */
 const VERDICT_NAMES: Readonly<Record<Verdict, string>> = {
-  centered: 'centrata',
+  centered: 'corretta',
   wrong: 'sbagliata',
   skipped: 'saltata',
 };
@@ -259,7 +259,7 @@ export function sessionLog(input: SessionLogInput): SessionLog {
       secondi: seconds(state.elapsedMs),
     },
     punteggio: {
-      centrate: state.score.centered,
+      corrette: state.score.centered,
       sbagliate: state.score.wrong,
       saltate: state.score.skipped,
       totale: state.score.total,
