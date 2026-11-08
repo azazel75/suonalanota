@@ -18,37 +18,85 @@
  */
 import type { Placement } from './staff';
 
-/** Logical size of the drawing; index.html scales the SVG to the width of the screen. */
-export const SHEET_WIDTH = 400;
-export const SHEET_HEIGHT = 300;
+/** Everything a staff needs to know about the paper it is drawn on. */
+export interface SheetGeometry {
+  readonly width: number;
+  readonly height: number;
+  /** Distance between two staff lines. */
+  readonly spacing: number;
+  /** Empty paper on either side of the staff. */
+  readonly margin: number;
+}
 
-/** Distance between two staff lines: large enough for a phone in a room. */
-export const LINE_SPACING = 30;
+/** The sheet of the exercise: one target, large, for a phone in a room. */
+export const EXERCISE_SHEET: SheetGeometry = { width: 400, height: 300, spacing: 30, margin: 12 };
 
-export const STAFF_MARGIN = 12;
+/**
+ * The sheet of a summary: the same staff, small enough that a few of them fit
+ * side by side on a phone — a note to look at again, not to read for the first
+ * time.
+ */
+export const SUMMARY_SHEET: SheetGeometry = { width: 180, height: 150, spacing: 22, margin: 6 };
+
+/** The exercise sheet, as the numbers the page scales by. */
+export const SHEET_WIDTH = EXERCISE_SHEET.width;
+export const SHEET_HEIGHT = EXERCISE_SHEET.height;
+export const LINE_SPACING = EXERCISE_SHEET.spacing;
+export const STAFF_MARGIN = EXERCISE_SHEET.margin;
 
 /** Step of the fifth line, counting from the bottom one. */
 export const TOP_LINE = 8;
 
-/** The topmost ink of a target: the fifth line, unless a ledger goes higher. */
-function highestInk(placement: Placement): number {
-  return Math.max(TOP_LINE, placement.step, ...placement.ledgerLines);
-}
-
-/** The bottommost ink: the first line, unless a ledger goes lower. */
-function lowestInk(placement: Placement): number {
-  return Math.min(0, placement.step, ...placement.ledgerLines);
-}
-
 /** The y of the top line of the staff, so that the ink of the target is centred. */
-export function topLineY(placement: Placement): number {
-  const ink = ((highestInk(placement) - lowestInk(placement)) * LINE_SPACING) / 2;
-  return (SHEET_HEIGHT - ink) / 2 + ((highestInk(placement) - TOP_LINE) * LINE_SPACING) / 2;
+export function topLineY(placement: Placement, sheet: SheetGeometry = EXERCISE_SHEET): number {
+  return topLineFor([placement], sheet);
+}
+
+/** The same, for a staff that carries several notes: the ink of all of them counts. */
+export function topLineFor(
+  placements: readonly Placement[],
+  sheet: SheetGeometry = EXERCISE_SHEET,
+): number {
+  const { above, below } = inkOutsideStaff(placements, sheet.spacing);
+  const block = above + 4 * sheet.spacing + below;
+  // Centred when the paper has room, never so high that the top line leaves it.
+  return Math.max(sheet.margin, (sheet.height - block) / 2 + above);
+}
+
+/**
+ * The sheet a series of notes needs: wide enough for the notes it carries,
+ * tall enough that no ledger line is cut, and one width for all the series of a
+ * summary, so their notes are drawn at the same size.
+ */
+export function seriesSheet(
+  placements: readonly Placement[],
+  base: SheetGeometry = SUMMARY_SHEET,
+): SheetGeometry {
+  const { above, below } = inkOutsideStaff(placements, base.spacing);
+  const width = Math.min(900, Math.max(420, 120 + Math.max(1, placements.length) * 70));
+  // The staff itself, the ink above and below it, the margins, and one space of
+  // air: less than this and a low note would be drawn past the bottom edge.
+  const height = base.margin * 2 + 4 * base.spacing + above + below + base.spacing;
+  return { ...base, width, height };
+}
+
+/** How far the ink of these notes reaches beyond the five lines, in pixels. */
+function inkOutsideStaff(
+  placements: readonly Placement[],
+  spacing: number,
+): { above: number; below: number } {
+  const steps = placements.flatMap((placement) => [placement.step, ...placement.ledgerLines]);
+  const highest = Math.max(TOP_LINE, ...steps);
+  const lowest = Math.min(0, ...steps);
+  return {
+    above: ((highest - TOP_LINE) * spacing) / 2,
+    below: ((0 - lowest) * spacing) / 2,
+  };
 }
 
 /** The y of a step, given the y of the top line of its staff. */
-export function yOfStep(topLine: number, step: number): number {
-  return topLine + ((TOP_LINE - step) * LINE_SPACING) / 2;
+export function yOfStep(topLine: number, step: number, spacing: number = LINE_SPACING): number {
+  return topLine + ((TOP_LINE - step) * spacing) / 2;
 }
 
 /**
@@ -57,10 +105,12 @@ export function yOfStep(topLine: number, step: number): number {
  * The head is about one space tall, so half a space of margin on each side is
  * what "not cut off" means here.
  */
-export function fitsSheet(placement: Placement): boolean {
-  const topLine = topLineY(placement);
-  const top = Math.min(yOfStep(topLine, placement.step), ...placement.ledgerLines.map((line) => yOfStep(topLine, line)));
-  const bottom = Math.max(yOfStep(topLine, placement.step), ...placement.ledgerLines.map((line) => yOfStep(topLine, line)));
-  const halfHead = LINE_SPACING / 2;
-  return top - halfHead >= 0 && bottom + halfHead <= SHEET_HEIGHT;
+export function fitsSheet(placement: Placement, sheet: SheetGeometry = EXERCISE_SHEET): boolean {
+  const topLine = topLineY(placement, sheet);
+  const ys = [
+    yOfStep(topLine, placement.step, sheet.spacing),
+    ...placement.ledgerLines.map((line) => yOfStep(topLine, line, sheet.spacing)),
+  ];
+  const halfHead = sheet.spacing / 2;
+  return Math.min(...ys) - halfHead >= 0 && Math.max(...ys) + halfHead <= sheet.height;
 }

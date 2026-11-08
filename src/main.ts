@@ -21,7 +21,9 @@
 import { createListener } from './audio/listener';
 import { openAudioInput, type AudioInput } from './audio/microphone';
 import { createExercise, type Exercise } from './exercise/controller';
-import { drawTarget } from './score/sheet';
+import { summarise, type SummarySeries } from './exercise/summary';
+import { seriesSheet } from './score/layout';
+import { drawNotes, drawTarget } from './score/sheet';
 import { ADVANCED_RANGE, BASE_RANGE, keysInRange, nearestPlacement, type KeyRange } from './score/staff';
 import type { EndReason, SessionState, Verdict } from './session/engine';
 
@@ -51,9 +53,16 @@ const statusLine = element<HTMLParagraphElement>('status');
 const messageLine = element<HTMLParagraphElement>('message');
 const startButton = element<HTMLButtonElement>('start');
 const pauseButton = element<HTMLButtonElement>('pause');
-const endCard = element<HTMLElement>('end');
-const endReason = element<HTMLParagraphElement>('end-reason');
 const restartButton = element<HTMLButtonElement>('restart');
+const exerciseCard = element<HTMLElement>('exercise');
+const summaryCard = element<HTMLElement>('summary');
+const summaryReason = element<HTMLParagraphElement>('summary-reason');
+const summaryScore = element<HTMLParagraphElement>('summary-score');
+const summaryRate = element<HTMLParagraphElement>('summary-rate');
+const wrongGroup = element<HTMLElement>('wrong-group');
+const wrongNotes = element<HTMLDivElement>('wrong-notes');
+const skippedGroup = element<HTMLElement>('skipped-group');
+const skippedNotes = element<HTMLDivElement>('skipped-notes');
 const rangeInputs = Array.from(document.querySelectorAll<HTMLInputElement>('input[name="range"]'));
 
 interface Running {
@@ -120,21 +129,76 @@ function setSettingsEnabled(enabled: boolean): void {
   for (const input of rangeInputs) input.disabled = !enabled;
 }
 
-function finish(reason: EndReason): void {
+/**
+ * One staff per clef, the notes one after the other: two lines instead of one
+ * card per note, and the writing the allievo saw preserved. Each staff gets the
+ * sheet its own notes need, so the ink is never cut and the notes stay as large
+ * as the room allows.
+ */
+function fillSeries(host: HTMLDivElement, series: readonly SummarySeries[]): void {
+  host.replaceChildren();
+  for (const group of series) {
+    const placements = group.notes.map((note) => note.placement);
+    const card = document.createElement('div');
+    card.className = 'mini sheet';
+    card.setAttribute('role', 'img');
+    // The eye reads the staff; the names are for the screen reader.
+    card.setAttribute('aria-label', group.notes.map((note) => note.name).join(', '));
+    host.append(card);
+    drawNotes(card, placements, seriesSheet(placements));
+  }
+}
+
+/** "1 centrata" but "3 centrate": a summary that a teacher reads aloud has to agree. */
+function count(value: number, one: string, many: string): string {
+  return `${value} ${value === 1 ? one : many}`;
+}
+
+function finish(reason: EndReason, state: SessionState): void {
   const current = running;
   running = null;
   current?.audio.stop();
 
+  const summary = summarise(state, current?.exercise.placements());
+  summaryReason.textContent = reason === 'duration'
+    ? 'È scaduto il tempo.'
+    : 'La lista dei bersagli è finita.';
+  summaryScore.textContent = [
+    count(summary.centered, 'centrata', 'centrate'),
+    count(summary.wrong, 'sbagliata', 'sbagliate'),
+    count(summary.skipped, 'saltata', 'saltate'),
+    `${summary.total} in tutto`,
+  ].join(' · ');
+  // "1 nota al minuto" but "4,5 note al minuto": the same agreement as the counts.
+  summaryRate.textContent =
+    `${summary.notesPerMinute} ${summary.notesPerMinute === '1' ? 'nota' : 'note'} al minuto`;
+
+  fillSeries(wrongNotes, summary.wrongNotes);
+  fillSeries(skippedNotes, summary.skippedNotes);
+  // An empty list says nothing: no heading, no empty row.
+  wrongGroup.hidden = summary.wrongNotes.length === 0;
+  skippedGroup.hidden = summary.skippedNotes.length === 0;
+
+  exerciseCard.hidden = true;
+  summaryCard.hidden = false;
+  pauseButton.hidden = true;
+  showMessage(null);
+  setSettingsEnabled(true);
+}
+
+/** Back to the exercise screen, without reloading the page. */
+function backToStart(): void {
+  summaryCard.hidden = true;
+  exerciseCard.hidden = false;
   pauseButton.hidden = true;
   startButton.hidden = false;
   startButton.disabled = false;
   setSettingsEnabled(true);
-  showMessage(null);
 
-  endReason.textContent = reason === 'duration'
-    ? 'È scaduto il tempo.'
-    : 'La lista dei bersagli è finita.';
-  endCard.hidden = false;
+  const keys = keysInRange(currentRange());
+  drawTarget(sheet, nearestPlacement(keys[Math.floor(Math.random() * keys.length)]));
+  showMessage(null);
+  statusLine.textContent = 'Premi Inizia, poi suona la nota che vedi.';
 }
 
 async function startSession(): Promise<void> {
@@ -142,7 +206,8 @@ async function startSession(): Promise<void> {
   const range = currentRange();
 
   startButton.disabled = true;
-  endCard.hidden = true;
+  summaryCard.hidden = true;
+  exerciseCard.hidden = false;
   showMessage(null);
 
   const listener = createListener({
@@ -223,7 +288,7 @@ async function main(): Promise<void> {
   statusLine.textContent = 'Premi Inizia, poi suona la nota che vedi.';
 
   startButton.addEventListener('click', () => void startSession());
-  restartButton.addEventListener('click', () => void startSession());
+  restartButton.addEventListener('click', backToStart);
   pauseButton.addEventListener('click', togglePause);
 
   for (const input of rangeInputs) {

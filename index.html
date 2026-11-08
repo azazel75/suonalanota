@@ -44,6 +44,14 @@
       .status { color: var(--dim); font-size: 15px; margin: 14px 2px; min-height: 22px; }
       .message { color: var(--warn); font-size: 15px; font-weight: 600; margin: 14px 2px; min-height: 22px; }
 
+      /* The summary: the counts first, then the notes to look at again, on the staff. */
+      .score { font-size: 19px; font-weight: 600; margin: 6px 0 4px; }
+      .rate { color: var(--dim); margin: 0 0 18px; }
+      .notes { display: grid; gap: 10px; margin: 2px 0 16px; }
+      .notes .mini { display: flex; justify-content: center; padding: 4px; border-radius: 10px; }
+      #summary h2 + p { margin-top: 0; }
+      #restart { margin-top: 6px; }
+
       button {
         width: 100%;
         min-height: 52px;
@@ -78,7 +86,7 @@
         <p class="lead">Leggi la nota sul rigo, poi suonala sul pianoforte.</p>
       </header>
 
-      <section class="card">
+      <section class="card" id="exercise">
         <!-- One target and nothing else on the staff: the whole question. -->
         <div id="target" class="sheet" role="img" aria-label="Un rigo con una nota da leggere"></div>
         <p id="status" class="status">Premi Inizia, poi suona la nota che vedi.</p>
@@ -95,10 +103,23 @@
         </fieldset>
       </section>
 
-      <section class="card" id="end" hidden>
+      <section class="card" id="summary" hidden>
         <h2>Sessione finita</h2>
-        <p id="end-reason"></p>
-        <button id="restart" type="button">Ricomincia</button>
+        <p id="summary-reason"></p>
+        <p id="summary-score" class="score"></p>
+        <p id="summary-rate" class="rate"></p>
+
+        <div id="wrong-group" hidden>
+          <h2>Sbagliate</h2>
+          <div id="wrong-notes" class="notes"></div>
+        </div>
+
+        <div id="skipped-group" hidden>
+          <h2>Saltate</h2>
+          <div id="skipped-notes" class="notes"></div>
+        </div>
+
+        <button id="restart" type="button">Torna all'inizio</button>
       </section>
 
       <details>

@@ -83,6 +83,8 @@ export interface Exercise {
   state(): SessionState;
   /** True once the session is over and the page has been told. */
   finished(): boolean;
+  /** The clef each key was drawn in: the middle C can be written two ways. */
+  placements(): ReadonlyMap<number, Clef>;
 }
 
 /** Five seconds of nothing is a room problem, not a wrong note. */
@@ -116,6 +118,8 @@ export function createExercise(options: ExerciseOptions): Exercise {
   let drawnResults = -1;
   let shownMessage: string | null = null;
   let announced = false;
+  /** The clef each key was written in, so the summary shows the same writing. */
+  const placements = new Map<number, Clef>();
 
   function showMessage(text: string | null): void {
     if (text === shownMessage) return;
@@ -133,6 +137,7 @@ export function createExercise(options: ExerciseOptions): Exercise {
     // remembered: everywhere else the key alone decides.
     if (equallyNearInBothClefs(state.current.key)) lastMiddleCClef = placement.clef;
     drawnResults = state.results.length;
+    placements.set(state.current.key, placement.clef);
     ports.draw(placement);
   }
 
@@ -202,5 +207,6 @@ export function createExercise(options: ExerciseOptions): Exercise {
     },
     state: () => session.state(),
     finished: () => announced,
+    placements: () => placements,
   };
 }
