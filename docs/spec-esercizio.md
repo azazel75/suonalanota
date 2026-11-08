@@ -56,15 +56,27 @@ Tre modi, scelti prima di iniziare:
 
 ## Verdetti e limiti
 
-I verdetto di un bersaglio è **centrata**, **sbagliata** o **saltata**, secondo la matrice di
-ADR 0003. Due limiti, entrambi configurabili e indipendenti:
+Il verdetto di un bersaglio è **centrata**, **sbagliata** o **saltata** (matrice di ADR 0003,
+aggiornata da ADR 0008). Ma prima del verdetto c'è un caso che verdetto non è: il **colpo ambiguo**,
+quello in cui la nota vincente e la sua ottava stanno a meno di 3 dB e il rilevatore non può
+scegliere. Un colpo ambiguo **non costa un tentativo**: l'applicazione chiede di ripetere la nota,
+perché l'ottava fa parte della risposta e indovinare sarebbe peggio che chiedere.
 
-- numero massimo di colpi errati sul bersaglio;
-- tempo massimo per bersaglio.
+Limiti, di default: **8 secondi per bersaglio**, e nessun tetto ai colpi nel frattempo — un tetto ai
+colpi errati esiste, è configurabile e di default è spento.
 
-Il limite che scatta per primo decide il verdetto. Nessun suono di riferimento viene emesso durante
-l'esercizio: il feedback sonoro è un beep neutro, quello visivo un lampeggio verde sulla centrata e
-rosso sull'errore.
+| evento | verdetto |
+| --- | --- |
+| un colpo contiene l'altezza esatta del bersaglio | centrata |
+| tempo scaduto, con almeno un colpo errato non ambiguo | sbagliata |
+| tempo scaduto, con soli colpi ambigui o senza colpi | saltata |
+| tetto dei colpi errati raggiunto (se configurato) | sbagliata |
+| la sessione finisce con il bersaglio a schermo | non conteggiata |
+
+Nessun suono di riferimento viene emesso durante l'esercizio: il feedback sonoro è un beep neutro,
+quello visivo un lampeggio verde sulla centrata, rosso sull'errore, e per un colpo ambiguo nessuno
+dei due — solo l'invito a ripetere.
+
 
 ## Soundcheck
 
@@ -98,12 +110,12 @@ sbaglia".
 
 ## Non ancora deciso
 
-- Valori di default del timeout per bersaglio e del numero di colpi errati.
-- Cosa mostra il pentagramma quando una nota richiede tagli addizionali (livello avanzato).
-- Quale chiave usa una sessione: una per sessione, o alternanza.
-- Le schermate: quante, in che ordine, cosa vede l'allievo fra una sessione e l'altra.
-- Come si compone e si salva una lista di note per la maestra.
-- Manifest e service worker della PWA: cosa è disponibile offline.
+- **Quale chiave per un dato bersaglio.** Le due chiavi convivono nella stessa sessione (deciso), ma
+  resta da dire *come* si sceglie quella con cui disegnare una nota: la chiave che lascia la nota più
+  vicina al rigo, oppure un'alternanza dichiarata (una battuta per chiave). Cambia il disegno e
+  cambia cosa impara l'allievo.
+- Il nome pubblico e il dominio: rimandato, e non blocca niente (la build è una cartella statica).
 - Il giro di misura su un pianoforte verticale e su una tastiera elettronica: oggi non sono
   accessibili. La previsione da falsificare è "acuti meglio, grave peggio" sulle tastiere
   elettroniche; il dato della mezza coda a coperchio chiuso non descrive nessuno dei due casi.
+

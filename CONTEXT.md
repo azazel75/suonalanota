@@ -36,6 +36,16 @@ L'inizio di un suono. Un tasto tenuto premuto non è un attacco, e non risolve i
 successivo.
 _Avoid_: nota, colpo
 
+**Colpo ambiguo**:
+Un colpo in cui la nota vincente e la sua ottava sono troppo vicine perché il rilevatore possa
+scegliere. Non si giudica e non costa un tentativo: l'applicazione chiede di ripetere la nota.
+_Avoid_: errore incerto, dubbio, timeout
+
+**Credibilità**:
+Quanto la nota vincente di un colpo si stacca dalla mediana di tutti i candidati. È un numero puro,
+non un livello: sotto 4 il colpo è rumore e non entra.
+_Avoid_: soglia, punteggio, volume
+
 **Portata udibile**:
 L'insieme delle note che quel dispositivo, in quella stanza, riesce davvero a sentire. Si misura,
 non si assume.
@@ -54,8 +64,19 @@ lista dei bersagli è esaurita.
 _Avoid_: partita, test, round, esercizio
 
 **Verdetto**:
-L'esito di un singolo bersaglio. Ha tre valori e non due.
+L'esito di un singolo bersaglio. Ha tre valori e non due, e non è la stessa cosa del giudizio su un
+colpo: un colpo ambiguo non produce nessun verdetto, produce una richiesta di ripetere.
 _Avoid_: risultato, esito, punteggio
+
+**Ottava**:
+L'intervallo fra una nota e la successiva con lo stesso nome. Fa parte della risposta: suonare il Do
+un'ottava sotto non è centrare il bersaglio.
+_Avoid_: registro, altezza
+
+**Range dell'esercizio**:
+L'intervallo fra la nota minima e la massima che una sessione può chiedere. Limita sia la sequenza
+sia la ricerca del rilevatore: fuori da lì non esiste candidato.
+_Avoid_: estensione, portata
 
 **Centrata**:
 Il verdetto di un bersaglio risolto da un colpo che contiene l'altezza esatta richiesta.

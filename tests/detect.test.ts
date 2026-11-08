@@ -324,6 +324,29 @@ describe('the search range', () => {
   });
 });
 
+describe('the ambiguity of the octave', () => {
+  test('a note whose octave scores within 3 dB is not judged, it is asked again', () => {
+    // Exactly the shape that produced the octave errors on the grand piano: the
+    // winner and its octave differ by a couple of dB, and no rule can tell them
+    // apart. The answer is not to guess: it is to make the player repeat.
+    const partials: Partial[] = [
+      { hz: midiToHz(A2), amplitude: 0.2 },
+      { hz: midiToHz(A2) * 2, amplitude: 1 },
+      { hz: midiToHz(A2) * 4, amplitude: 0.5 },
+      { hz: midiToHz(A2) * 6, amplitude: 0.25 },
+    ];
+    const detection = analyseSpectrum(amplitudeSpectrum(synthesise(partials)), SAMPLE_RATE);
+    expect(detection.octaveMarginDb).toBeLessThan(3);
+    expect(detection.ambiguous).toBe(true);
+  });
+
+  test('a note that wins clearly is judged', () => {
+    const detection = detect(pianoTone(A4));
+    expect(detection.octaveMarginDb).toBeGreaterThan(3);
+    expect(detection.ambiguous).toBe(false);
+  });
+});
+
 describe('the measured frequency', () => {
   test('is the frequency that was played, not the nominal one', () => {
     const flat = detect(pianoTone(A4, { cents: -30 }));

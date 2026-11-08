@@ -85,6 +85,8 @@ interface Colpo {
   octaveBelowMagnitude: number;
   /** How much the winner stands out from the median candidate: this is the gate. */
   credibility: number;
+  /** The octave was too close to call: this colpo must not be judged. */
+  ambiguous: boolean;
   octaveFlipped: boolean;
   top: { midi: number; name: string; score: number }[];
 }
@@ -303,6 +305,16 @@ function showDetection(detection: Detection, levelDb: number): void {
 }
 
 function flashVerdict(colpo: Colpo): void {
+  // An ambiguous colpo is not a mistake by the player and must not cost an
+  // attempt: the exercise asks to play it again.
+  if (colpo.ambiguous) {
+    flashLine.className = 'warn';
+    flashLine.textContent =
+      `ambiguo (l'ottava non è distinguibile): chiedi di ripetere — ` +
+      `atteso ${colpo.referenceName}, sentito ${colpo.detectedName}`;
+    return;
+  }
+
   const colours: Record<Verdict, string> = {
     giusto: 'good',
     ottava: 'warn',
@@ -326,6 +338,7 @@ function flashVerdict(colpo: Colpo): void {
 
 function renderCounters(): void {
   const totals = { colpi: log.length, giusto: 0, ottava: 0, altro: 0 };
+  const ambiguous = log.filter((colpo) => colpo.ambiguous).length;
   const perReference = new Map<number, { colpi: number; giusto: number; ottava: number; altro: number }>();
 
   for (const colpo of log) {
@@ -348,6 +361,7 @@ function renderCounters(): void {
     const right = (100 * totals.giusto) / totals.colpi;
     facts.push(['precisione', `${round(right, 1)} %`]);
   }
+  facts.push(['ambigui (da ripetere)', String(ambiguous)]);
   for (const [name, value] of facts) {
     const label = document.createElement('span');
     label.textContent = name;
@@ -396,6 +410,7 @@ function record(detection: Detection, levelDb: number, nowMs: number, stability:
     fundamentalMagnitude: round(detection.fundamentalMagnitude, 5),
     octaveBelowMagnitude: round(detection.octaveBelowMagnitude, 5),
     credibility: round(detection.credibility, 2),
+    ambiguous: detection.ambiguous,
     octaveFlipped: detection.octaveFlipped,
     top: detection.candidates.slice(0, 5).map((candidate) => ({
       midi: candidate.midi,

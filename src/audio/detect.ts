@@ -43,6 +43,14 @@ export const PARTIAL_TOLERANCE = 0.02;
 /** Beyond this margin the winner is not a tie with its octave: leave it alone. */
 export const OCTAVE_TIE_DB = 6;
 
+/**
+ * Below this margin the winner and its octave are not distinguishable by this
+ * detector at all — measured on a grand piano, every octave error sat between 0.5
+ * and 3.3 dB — so the colpo is **ambiguous**: it must not be judged, the player is
+ * asked to play it again. Guessing here is what makes an exercise unfair.
+ */
+export const OCTAVE_AMBIGUITY_DB = 3;
+
 /** The octave below is chosen only when its fundamental is at least this share of
  * the frame's RMS.
  *
@@ -109,6 +117,8 @@ export interface Detection {
   octaveBelowMagnitude: number;
   /** Winner's score over the median score of the whole range: how much it stands out. */
   credibility: number;
+  /** True when the winner cannot be told apart from its octave: do not judge, ask again. */
+  ambiguous: boolean;
   /** True when the octave rule moved the winner one octave down. */
   octaveFlipped: boolean;
 }
@@ -308,18 +318,20 @@ export function analyseSpectrum(
     ? fundamentalOf(magnitudes, sampleRate, best.midi - 12)
     : null;
   const typical = medianOf(candidates.map((candidate) => candidate.score));
+  const octaveMarginDb = decibelsRatio(best.score, strongestOctave);
 
   return {
     best,
     second,
     candidates,
     marginDb: second ? decibelsRatio(best.score, second.score) : 99,
-    octaveMarginDb: decibelsRatio(best.score, strongestOctave),
+    octaveMarginDb,
     measuredHz: fundamental.magnitude > 0 ? fundamental.hz : 0,
     fundamentalPresent: present(fundamental.magnitude),
     fundamentalMagnitude: fundamental.magnitude,
     octaveBelowMagnitude: below?.magnitude ?? 0,
     credibility: typical > 0 ? best.score / typical : 99,
+    ambiguous: octaveMarginDb <= OCTAVE_AMBIGUITY_DB,
     octaveFlipped,
   };
 }

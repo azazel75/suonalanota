@@ -1,5 +1,8 @@
 # Il verdetto dipende da come il bersaglio si chiude, non dal timer
 
+> **Aggiornato da [ADR 0008](0008-il-colpo-ambiguo.md)**: la matrice resta valida per i colpi non
+> ambigui; un bersaglio che si chiude con soli colpi ambigui conta come *saltata*, non *sbagliata*.
+
 I limiti di un bersaglio sono due e sono indipendenti: un numero massimo di colpi errati e un
 tempo massimo. Configurarli entrambi è utile (un allievo veloce e insicuro ha bisogno dell'uno, uno
 lento dell'altro), ma lascia aperta la domanda su cosa si registra quando è il tempo a chiudere il
