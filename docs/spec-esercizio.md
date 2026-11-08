@@ -46,6 +46,16 @@ soltanto restringerlo (vedi ADR 0004): su un telefono di fascia media la parte 4
 inaudibile, quindi l'avanzato, su quel dispositivo, parte più in alto — e se il limite misurato
 arrivasse a Do3 l'avanzato coinciderebbe col base. Non è un difetto della misura: è la misura.
 
+## Chiavi
+
+Le due chiavi convivono nella stessa sessione, di default. Ogni bersaglio si disegna nella chiave che
+lo lascia **più vicino al rigo**: i bassi in chiave di basso, gli acuti in chiave di violino. Il **Do
+centrale** è l'unica nota in cui le due scritture sono equivalenti — un taglio sopra il basso, un
+taglio sotto il violino — e alterna fra le due.
+
+Una modalità separata ("la stessa nota nelle due chiavi, una battuta per chiave") resta possibile e
+sarà un esercizio a sé: non è questa.
+
 ## Sequenza dei bersagli
 
 Tre modi, scelti prima di iniziare:
@@ -110,12 +120,10 @@ sbaglia".
 
 ## Non ancora deciso
 
-- **Quale chiave per un dato bersaglio.** Le due chiavi convivono nella stessa sessione (deciso), ma
-  resta da dire *come* si sceglie quella con cui disegnare una nota: la chiave che lascia la nota più
-  vicina al rigo, oppure un'alternanza dichiarata (una battuta per chiave). Cambia il disegno e
-  cambia cosa impara l'allievo.
 - Il nome pubblico e il dominio: rimandato, e non blocca niente (la build è una cartella statica).
 - Il giro di misura su un pianoforte verticale e su una tastiera elettronica: oggi non sono
   accessibili. La previsione da falsificare è "acuti meglio, grave peggio" sulle tastiere
   elettroniche; il dato della mezza coda a coperchio chiuso non descrive nessuno dei due casi.
+- Le due sonde dell'ottava (parziali dispari, salita delle bande) sono pronte e aspettano il
+  pianoforte: se una delle due funziona, il colpo ambiguo si dirada e le ripetizioni diminuiscono.
 
