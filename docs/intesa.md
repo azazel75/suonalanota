@@ -16,8 +16,9 @@ l'esercizio, niente backend, niente dati che escono dal dispositivo.
 
 - **Bersaglio** — la nota scritta da eseguire. **Tasto** — quello che si preme, un numero MIDI.
 - **Colpo** — un attacco riconosciuto dal microfono, con l'altezza che contiene.
-- **Colpo ambiguo** — un colpo in cui la nota e la sua ottava sono a meno di 3 dB: non si giudica, si
-  chiede di ripetere, e non costa un tentativo.
+- **Colpo ambiguo** — un colpo in cui la nota e la sua ottava restano indistinguibili: pareggio entro
+  3 dB *e* evidenza delle parziali dispari dentro la banda 0,2–0,4, oppure evidenza non calcolabile.
+  Non si giudica, si chiede di ripetere, e non costa un tentativo.
 - **Verdetto** — centrata, sbagliata, saltata. Tre valori, non due.
 
 ## I numeri
@@ -80,7 +81,8 @@ registrata per ogni colpo, così un errore del rilevatore si distingue da un err
 
 `docs/adr/0001` microfono e basta · `0002` PWA statica, classifica locale · `0003` la matrice dei
 verdetti · `0004` il rilevatore dopo il primo giro · `0005` la parabola e la risonanza · `0006`
-leggere dopo l'attacco · `0007` il quarto giro · `0008` il colpo ambiguo.
+leggere dopo l'attacco · `0007` il quarto giro · `0008` il colpo ambiguo · `0009` le parziali
+dispari.
 
 Le specifiche complete: `docs/spec-esercizio.md`. I giri di misura e le loro condizioni:
 `docs/protocollo-di-misura.md`.
