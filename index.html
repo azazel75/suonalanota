@@ -14,6 +14,9 @@
         --dim: #8fa3b8;
         --accent: #6cb6ff;
         --paper: #fbf8f1;
+        --good: #2f9e44;
+        --bad: #c92a2a;
+        --warn: #ffd166;
       }
       * { box-sizing: border-box; }
       body {
@@ -34,9 +37,12 @@
       .sheet { background: var(--paper); border-radius: 12px; padding: 10px 6px; }
       .sheet svg { display: block; width: 100%; height: auto; }
       .sheet.bad { padding: 24px 16px; color: #7a1d1d; font-size: 14px; }
+      /* The verdict is a flash of the whole sheet: a border and a halo, gone in a third of a second. */
+      .sheet.flash-good { box-shadow: inset 0 0 0 5px var(--good), 0 0 26px rgba(47, 158, 68, 0.55); }
+      .sheet.flash-bad { box-shadow: inset 0 0 0 5px var(--bad), 0 0 26px rgba(201, 42, 42, 0.5); }
 
-      .range { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; color: var(--dim); font-size: 14px; margin: 12px 2px 14px; }
-      .range strong { color: var(--text); font-weight: 600; }
+      .status { color: var(--dim); font-size: 15px; margin: 14px 2px; min-height: 22px; }
+      .message { color: var(--warn); font-size: 15px; font-weight: 600; margin: 14px 2px; min-height: 22px; }
 
       button {
         width: 100%;
@@ -50,6 +56,8 @@
         font-size: 17px;
       }
       button:active { filter: brightness(0.92); }
+      button:disabled { opacity: 0.5; }
+      button.ghost { background: transparent; border: 1px solid var(--line); color: var(--text); margin-top: 10px; }
 
       fieldset { border: 0; margin: 0; padding: 0; }
       legend { color: var(--dim); font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; padding: 0 0 8px; }
@@ -73,11 +81,10 @@
       <section class="card">
         <!-- One target and nothing else on the staff: the whole question. -->
         <div id="target" class="sheet" role="img" aria-label="Un rigo con una nota da leggere"></div>
-        <p class="range">
-          <span>Range attivo</span>
-          <strong id="range-label">Do3–Do5</strong>
-        </p>
-        <button id="next" type="button">Un'altra nota</button>
+        <p id="status" class="status">Premi Inizia, poi suona la nota che vedi.</p>
+        <p id="message" class="message" role="status" hidden></p>
+        <button id="start" type="button">Inizia</button>
+        <button id="pause" type="button" class="ghost" hidden>Pausa</button>
       </section>
 
       <section class="card">
@@ -86,6 +93,12 @@
           <label class="choice"><input type="radio" name="range" value="base" checked /> base · Do3–Do5</label>
           <label class="choice"><input type="radio" name="range" value="advanced" /> avanzato · Si1–Re6</label>
         </fieldset>
+      </section>
+
+      <section class="card" id="end" hidden>
+        <h2>Sessione finita</h2>
+        <p id="end-reason"></p>
+        <button id="restart" type="button">Ricomincia</button>
       </section>
 
       <details>

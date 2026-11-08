@@ -5,11 +5,11 @@ volta, in chiave di violino e di basso, ascolta il pianoforte dal microfono e pa
 successiva quando sente il tasto giusto o quando scade il tempo. Alla fine dà il punteggio:
 quante centrate, quante sbagliate, quante saltate.
 
-**Stato: la mappa del rigo.** La pagina mostra un bersaglio alla volta, nella chiave che lascia
-la nota più vicina al rigo, con i tagli addizionali al posto giusto: la mappa è in
-`src/score/staff.ts` e il disegno in `src/score/sheet.ts`. Mancano l'ascolto dal microfono e la
-sessione — verdetti, punteggio, classifica — che si scrivono dopo lo spike, perché è lo spike a
-dire se il microfono basta.
+**Stato: l'esercizio.** La pagina mostra un bersaglio alla volta, nella chiave che lascia la nota
+più vicina al rigo, ascolta il pianoforte dal microfono e risponde subito: verde sulla nota giusta,
+rosso sulla sbagliata, e quando l'ottava è incerta non giudica — chiede di ripetere. Otto secondi per
+bersaglio, pausa, e la sessione che si chiude da sola a tempo scaduto o a lista esaurita.
+Mancano il riepilogo con il punteggio, le impostazioni della prova, la classifica e il log.
 
 ## Come si lavora
 
