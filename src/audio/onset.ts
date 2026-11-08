@@ -9,7 +9,17 @@
  * and two identical notes in a row would count as one.
  *
  * Spectral flux against its own recent median, so that a room with a hum or a
- * fan does not keep the detector open, plus a minimum interval between attacks.
+ * fan does not keep the detector open, plus a minimum interval between attacks
+ * and — the part that matters — a state machine: **one attack per rise**. After
+ * firing, the detector stays disarmed until the flux falls back below half the
+ * threshold. Without that, a single attack on a decaying, beating piano tone
+ * re-triggers every `cooldown + hop`: the first spike measured gaps of 133 and
+ * 150 ms against a 120 ms cooldown and a 40 ms hop, and up to eleven colpi for
+ * three presses.
+ *
+ * This module sees the *attack* spectrum: a short window (2048 samples), not the
+ * 341 ms one the pitch needs. Using the long window here is what produced three
+ * or four detections per keystroke in the first place.
  */
 
 /** How many past frames the median of the flux is taken over. */
@@ -18,19 +28,30 @@ const HISTORY = 43;
 /** Frames needed before the median means anything: before that, nothing triggers. */
 const MIN_HISTORY = 8;
 
-/** Flux below this is never an attack, whatever the median says. */
-const FLOOR = 0.02;
-
+/** Flux below this is never an attack, whatever the median says.
+ *
+ * A rise from silence gives a flux of about 1, and an attack over a residue that
+ * is still at 40% gives about 0.6. A *beating* piano unison raises the spectrum by
+ * a few percent per frame: measured at about 0.05 on a synthetic tone with a 12%
+ * beat. The floor has to sit between the two, or every beat of a held note is an
+ * attack — the first version used 0.02 and produced eight attacks on a single
+ * two-second note.
+ */
+const FLOOR = 0.15;
 
 /** Flux must exceed the median by this factor to be an attack. */
 const DEFAULT_RATIO = 3;
 
-/** Two attacks closer than this are one attack. */
+/** The detector re-arms when the flux falls below this share of the threshold. */
+const DEFAULT_RELEASE = 0.5;
+
+/** Two attacks closer than this are one attack: a backstop, not the brake. */
 const DEFAULT_COOLDOWN_MS = 120;
 
 export interface OnsetOptions {
   ratio?: number;
   cooldownMs?: number;
+  release?: number;
 }
 
 export interface OnsetDetector {
@@ -40,6 +61,8 @@ export interface OnsetDetector {
   readonly flux: number;
   /** The trigger level the last frame was compared against, for display. */
   readonly threshold: number;
+  /** True when the detector may fire again: it has heard the sound fall back. */
+  readonly armed: boolean;
   reset(): void;
 }
 
@@ -68,12 +91,14 @@ export function median(values: number[]): number {
 export function createOnsetDetector(options: OnsetOptions = {}): OnsetDetector {
   const ratio = options.ratio ?? DEFAULT_RATIO;
   const cooldownMs = options.cooldownMs ?? DEFAULT_COOLDOWN_MS;
+  const release = options.release ?? DEFAULT_RELEASE;
 
   let previous: Float32Array | null = null;
   let history: number[] = [];
   let lastAttackMs = -Infinity;
   let flux = 0;
   let threshold = 0;
+  let armed = true;
 
   function reset(): void {
     previous = null;
@@ -81,6 +106,7 @@ export function createOnsetDetector(options: OnsetOptions = {}): OnsetDetector {
     lastAttackMs = -Infinity;
     flux = 0;
     threshold = 0;
+    armed = true;
   }
 
   function push(magnitudes: Float32Array, nowMs: number): boolean {
@@ -103,10 +129,16 @@ export function createOnsetDetector(options: OnsetOptions = {}): OnsetDetector {
     if (history.length > HISTORY) history.shift();
 
     if (!Number.isFinite(threshold)) return false;
+
+    // One attack per rise: the sound has to come back down before the detector
+    // is allowed to fire again. This is the brake; the cooldown is the backstop.
+    if (flux < threshold * release) armed = true;
+    if (!armed) return false;
     if (flux < threshold) return false;
     if (nowMs - lastAttackMs < cooldownMs) return false;
 
     lastAttackMs = nowMs;
+    armed = false;
     return true;
   }
 
@@ -118,6 +150,9 @@ export function createOnsetDetector(options: OnsetOptions = {}): OnsetDetector {
     },
     get threshold() {
       return threshold;
+    },
+    get armed() {
+      return armed;
     },
   };
 }

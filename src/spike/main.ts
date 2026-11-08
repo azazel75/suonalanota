@@ -26,11 +26,27 @@ import {
 import { createOnsetDetector } from '../audio/onset';
 
 const FFT_SIZE = 16_384;
+/** The attack is measured on a short window: 43 ms, not the 341 ms the pitch needs. */
+const ONSET_WINDOW = 2_048;
 const ANALYSIS_INTERVAL_MS = 40;
 const SPECTRUM_MIN_HZ = 20;
 const SPECTRUM_MAX_HZ = 8_000;
 const DB_FLOOR = -100;
 const NOISE_FRAMES = 25;
+
+interface NoteRange {
+  id: string;
+  label: string;
+  low: number;
+  high: number;
+}
+
+/** The ranges the exercise can ask for, plus the whole keyboard to compare. */
+const RANGES: NoteRange[] = [
+  { id: 'base', label: 'base · Do3 – Do5', low: 48, high: 72 },
+  { id: 'avanzato', label: 'avanzato · Si1 – Re6', low: 35, high: 86 },
+  { id: 'piano', label: 'tutto il pianoforte · La0 – Do8', low: 21, high: 108 },
+];
 
 type Verdict = 'giusto' | 'ottava' | 'altro';
 
@@ -40,12 +56,21 @@ interface Colpo {
   referenceName: string;
   detected: number;
   detectedName: string;
+  /** The frequency actually measured near the detected note's fundamental. */
+  measuredHz: number;
   detectedHz: number;
   score: number;
   marginDb: number;
   octaveMarginDb: number;
   levelDb: number;
   verdict: Verdict;
+  /** The settings in force for this colpo, not the ones at download time. */
+  gate: number;
+  rangeLow: number;
+  rangeHigh: number;
+  stability: number;
+  fundamentalPresent: boolean;
+  octaveFlipped: boolean;
   top: { midi: number; name: string; score: number }[];
 }
 
@@ -77,6 +102,7 @@ const flashLine = element<HTMLDivElement>('flash');
 const spectrumCanvas = element<HTMLCanvasElement>('spectrum');
 const candidatesBody = element<HTMLTableSectionElement>('candidates');
 const referenceSelect = element<HTMLSelectElement>('ref');
+const rangeSelect = element<HTMLSelectElement>('range-notes');
 const referenceDetail = element<HTMLParagraphElement>('ref-detail');
 const referenceDown = element<HTMLButtonElement>('ref-down');
 const referenceUp = element<HTMLButtonElement>('ref-up');
@@ -90,6 +116,7 @@ const onset = createOnsetDetector();
 const log: Colpo[] = [];
 
 let reference = 60;
+let activeRange: NoteRange = RANGES[1];
 let gate = Number(gateInput.value);
 let context: AudioContext | null = null;
 let analyser: AnalyserNode | null = null;
@@ -98,6 +125,8 @@ let running = false;
 let lastAnalysisMs = 0;
 let lastDetection: Detection | null = null;
 let lastLevelDb = DB_FLOOR;
+let recentWinners: number[] = [];
+let lastStability = 0;
 let timeBuffer = new Float32Array(FFT_SIZE);
 let noiseFrames: Float32Array[] = [];
 let noiseTarget = 0;
@@ -229,7 +258,10 @@ function showDetection(detection: Detection, levelDb: number): void {
   const best = detection.best;
   noteDisplay.textContent = midiToLabel(best.midi);
   const midiTag = document.createElement('small');
-  midiTag.textContent = ` · MIDI ${best.midi} · ${round(best.hz, 1)} Hz`;
+  const measured = detection.measuredHz > 0
+    ? `${round(detection.measuredHz, 1)} Hz misurati`
+    : 'fondamentale non ricevuta';
+  midiTag.textContent = ` · MIDI ${best.midi} · ${measured}${detection.octaveFlipped ? ' · ottava corretta' : ''}`;
   noteDisplay.append(midiTag);
 
   levelCell.textContent = `${round(levelDb, 1)} dBFS`;
@@ -325,19 +357,26 @@ function renderCounters(): void {
   }
 }
 
-function record(detection: Detection, levelDb: number, nowMs: number): void {
+function record(detection: Detection, levelDb: number, nowMs: number, stability: number): void {
   const colpo: Colpo = {
     at: Math.round(nowMs),
     reference,
     referenceName: midiToName(reference),
     detected: detection.best.midi,
     detectedName: midiToName(detection.best.midi),
+    measuredHz: round(detection.measuredHz, 2),
     detectedHz: round(detection.best.hz, 2),
     score: round(detection.best.score, 5),
     marginDb: round(detection.marginDb, 1),
     octaveMarginDb: round(detection.octaveMarginDb, 1),
     levelDb: round(levelDb, 1),
     verdict: verdictOf(reference, detection.best.midi),
+    gate,
+    rangeLow: activeRange.low,
+    rangeHigh: activeRange.high,
+    stability,
+    fundamentalPresent: detection.fundamentalPresent,
+    octaveFlipped: detection.octaveFlipped,
     top: detection.candidates.slice(0, 5).map((candidate) => ({
       midi: candidate.midi,
       name: midiToName(candidate.midi),
@@ -349,7 +388,7 @@ function record(detection: Detection, levelDb: number, nowMs: number): void {
   flashVerdict(colpo);
 }
 
-function collectNoise(magnitudes: Float32Array): void {
+function collectNoise(magnitudes: Float32Array, sampleRate: number): void {
   if (noiseTarget <= 0) return;
   noiseFrames.push(Float32Array.from(magnitudes));
   noiseTarget -= 1;
@@ -370,17 +409,33 @@ function collectNoise(magnitudes: Float32Array): void {
   const peaks: { hz: number; db: number }[] = [];
   for (let bin = 2; bin < length - 1; bin++) {
     if (mean[bin] > mean[bin - 1] && mean[bin] > mean[bin + 1]) {
-      peaks.push({ hz: bin * (48000 / (length * 2)), db: toDecibels(mean[bin], DB_FLOOR) });
+      peaks.push({ hz: bin * (sampleRate / (length * 2)), db: toDecibels(mean[bin], DB_FLOOR) });
     }
   }
   peaks.sort((left, right) => right.db - left.db);
 
-  noiseReport = { frames: NOISE_FRAMES, medianDb: round(medianDb, 1), peaks: peaks.slice(0, 5).map((peak) => ({ hz: round(peak.hz, 0), db: round(peak.db, 1) })) };
+  // The gate is not a knob: it comes from the room. Score the silence itself and
+  // keep four times what an empty room can produce.
+  const silence = analyseSpectrum(Float32Array.from(mean), sampleRate, {
+    lowMidi: activeRange.low,
+    highMidi: activeRange.high,
+  });
+  const derived = Math.min(0.02, Math.max(0.0002, Number((silence.best.score * 4).toFixed(5))));
+  gate = derived;
+  gateInput.value = String(derived);
+  gateLabel.textContent = derived.toFixed(4);
+
+  noiseReport = {
+    frames: NOISE_FRAMES,
+    medianDb: round(medianDb, 1),
+    peaks: peaks.slice(0, 5).map((peak) => ({ hz: round(peak.hz, 0), db: round(peak.db, 1) })),
+  };
 
   noiseOutput.className = '';
   noiseOutput.textContent =
     `rumore mediano ${noiseReport.medianDb} dB · picchi: ` +
-    noiseReport.peaks.map((peak) => `${peak.hz} Hz ${peak.db} dB`).join(', ');
+    noiseReport.peaks.map((peak) => `${peak.hz} Hz ${peak.db} dB`).join(', ') +
+    ` · soglia portata a ${derived.toFixed(4)}`;
 }
 
 function analyse(nowMs: number): void {
@@ -388,22 +443,40 @@ function analyse(nowMs: number): void {
 
   analyser.getFloatTimeDomainData(timeBuffer);
   const levelDb = toDecibels(rms(timeBuffer), DB_FLOOR);
+
+  // Two windows, two questions. The short one hears the attack (2048 samples,
+  // 43 ms); the long one resolves the pitch (341 ms, needed for the bass). The
+  // last ONSET_WINDOW samples of the buffer are the most recent ones.
+  const attackMagnitudes = amplitudeSpectrum(timeBuffer.subarray(FFT_SIZE - ONSET_WINDOW));
   const magnitudes = amplitudeSpectrum(timeBuffer);
-  const detection = analyseSpectrum(magnitudes, context.sampleRate);
+  const detection = analyseSpectrum(magnitudes, context.sampleRate, {
+    lowMidi: activeRange.low,
+    highMidi: activeRange.high,
+  });
 
   lastLevelDb = levelDb;
   lastDetection = detection;
 
+  recentWinners.push(detection.best.midi);
+  if (recentWinners.length > 5) recentWinners.shift();
+  let stability = 0;
+  for (let index = recentWinners.length - 1; index >= 0; index--) {
+    if (recentWinners[index] !== detection.best.midi) break;
+    stability++;
+  }
+  lastStability = stability;
+
   drawSpectrum(magnitudes, context.sampleRate);
   showDetection(detection, levelDb);
-  collectNoise(magnitudes);
+  collectNoise(magnitudes, context.sampleRate);
 
-  const attack = onset.push(magnitudes, nowMs);
+  const attack = onset.push(attackMagnitudes, nowMs);
   onsetsCell.textContent = attack
     ? 'attacco'
-    : `flusso ${onset.flux.toFixed(3)} / soglia ${Number.isFinite(onset.threshold) ? onset.threshold.toFixed(3) : '—'}`;
+    : `flusso ${onset.flux.toFixed(3)} / soglia ${Number.isFinite(onset.threshold) ? onset.threshold.toFixed(3) : '—'}` +
+      ` · ${onset.armed ? 'armato' : 'in attesa che il suono scenda'}`;
 
-  if (attack && detection.best.score >= gate) record(detection, levelDb, nowMs);
+  if (attack && detection.best.score >= gate) record(detection, levelDb, nowMs, stability);
 }
 
 function loop(nowMs: number): void {
@@ -551,7 +624,7 @@ downloadButton.addEventListener('click', download);
 
 measureButton.addEventListener('click', () => {
   if (lastDetection === null) return;
-  record(lastDetection, lastLevelDb, performance.now());
+  record(lastDetection, lastLevelDb, performance.now(), lastStability);
 });
 
 notesButton.addEventListener('click', () => {
@@ -561,6 +634,17 @@ notesButton.addEventListener('click', () => {
   noiseOutput.className = 'hint';
   noiseOutput.textContent = 'misuro un secondo in silenzio…';
 });
+
+function fillRangeSelect(): void {
+  rangeSelect.replaceChildren();
+  for (const range of RANGES) {
+    const option = document.createElement('option');
+    option.value = range.id;
+    option.textContent = range.label;
+    rangeSelect.append(option);
+  }
+  rangeSelect.value = activeRange.id;
+}
 
 function setReference(midi: number): void {
   reference = Math.min(HIGHEST_MIDI, Math.max(LOWEST_MIDI, midi));
@@ -576,12 +660,23 @@ referenceSelect.addEventListener('change', () => setReference(Number(referenceSe
 referenceDown.addEventListener('click', () => setReference(reference - 1));
 referenceUp.addEventListener('click', () => setReference(reference + 1));
 
+rangeSelect.addEventListener('change', () => {
+  const chosen = RANGES.find((range) => range.id === rangeSelect.value);
+  if (chosen === undefined) return;
+  activeRange = chosen;
+  onset.reset();
+  recentWinners = [];
+  // A reference outside the range would make every verdict "altra nota".
+  setReference(Math.min(chosen.high, Math.max(chosen.low, reference)));
+});
+
 gateInput.addEventListener('input', () => {
   gate = Number(gateInput.value);
   gateLabel.textContent = gate.toFixed(4);
 });
 
 fillReferenceSelect();
+fillRangeSelect();
 setReference(reference);
 renderCounters();
 gateLabel.textContent = gate.toFixed(4);

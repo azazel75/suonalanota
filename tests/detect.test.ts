@@ -172,3 +172,150 @@ describe('the onset detector', () => {
     expect(median([])).toBe(0);
   });
 });
+
+/** A long signal, cut into overlapping windows the way an analyser would. */
+function framesOf(
+  partials: Partial[],
+  seconds: number,
+  window: number,
+  hop: number,
+  envelope: (t: number) => number,
+): Float32Array[] {
+  const total = Math.round(seconds * SAMPLE_RATE);
+  const signal = new Float32Array(total);
+  for (let index = 0; index < total; index++) {
+    const t = index / SAMPLE_RATE;
+    let value = 0;
+    for (const partial of partials) {
+      value += partial.amplitude * Math.sin(2 * Math.PI * partial.hz * t);
+    }
+    signal[index] = value * envelope(t);
+  }
+
+  const frames: Float32Array[] = [];
+  for (let start = 0; start + window <= total; start += hop) {
+    frames.push(amplitudeSpectrum(signal.slice(start, start + window)));
+  }
+  return frames;
+}
+
+describe('the onset detector against a real-shaped note', () => {
+  const WINDOW = 2048;
+  const HOP = 1920;
+  const silence = amplitudeSpectrum(new Float32Array(WINDOW));
+
+  function arm(detector: ReturnType<typeof createOnsetDetector>): void {
+    for (let frame = 0; frame < 12; frame++) detector.push(silence, frame * 40);
+  }
+
+  test('a note held for two seconds, decaying and beating, is exactly one attack', () => {
+    // This is the defect the first spike measured: eleven colpi for three presses,
+    // at 133 and 150 ms from each other, on a tone that was still ringing.
+    const detector = createOnsetDetector();
+    arm(detector);
+
+    const frames = framesOf(
+      pianoTone(A4),
+      2,
+      WINDOW,
+      HOP,
+      (t) => Math.exp(-t / 0.6) * (1 + 0.12 * Math.sin(2 * Math.PI * 4 * t)),
+    );
+
+    let attacks = 0;
+    frames.forEach((frame, index) => {
+      if (detector.push(frame, 1000 + index * 40)) attacks++;
+    });
+    expect(attacks).toBe(1);
+  });
+
+  test('an attack that lands on a sound that has not died away is still an attack', () => {
+    // Emilia lifts the finger between presses, but the note is still ringing:
+    // the second press must not be missed, and must not be counted twice.
+    const detector = createOnsetDetector({ cooldownMs: 0 });
+    arm(detector);
+
+    const residue = amplitudeSpectrum(synthesise(pianoTone(A4).map(
+      (partial) => ({ hz: partial.hz, amplitude: partial.amplitude * 0.4 }),
+    ), WINDOW));
+    const attack = amplitudeSpectrum(synthesise(pianoTone(A4), WINDOW));
+
+    let attacks = 0;
+    for (let frame = 0; frame < 4; frame++) {
+      if (detector.push(residue, 1000 + frame * 40)) attacks++;
+    }
+    for (let frame = 0; frame < 4; frame++) {
+      if (detector.push(attack, 1200 + frame * 40)) attacks++;
+    }
+    expect(attacks).toBe(2);
+  });
+
+  test('a release is not an attack', () => {
+    const detector = createOnsetDetector({ cooldownMs: 0 });
+    arm(detector);
+    const attack = amplitudeSpectrum(synthesise(pianoTone(A4), WINDOW));
+    detector.push(attack, 1000);
+    expect(detector.push(amplitudeSpectrum(new Float32Array(WINDOW)), 1100)).toBe(false);
+  });
+});
+
+describe('the octave rule', () => {
+  test('the octave below is chosen when its own fundamental is in the spectrum', () => {
+    // A bass note whose fundamental barely survives the microphone, with the
+    // partials above it falling away fast: without the rule the octave above wins.
+    const partials: Partial[] = [
+      { hz: midiToHz(A2), amplitude: 0.02 },
+      { hz: midiToHz(A2) * 2, amplitude: 1 },
+      { hz: midiToHz(A2) * 3, amplitude: 0.5 },
+      { hz: midiToHz(A2) * 4, amplitude: 0.2 },
+    ];
+    const magnitudes = amplitudeSpectrum(synthesise(partials));
+
+    const withoutRule = analyseSpectrum(magnitudes, SAMPLE_RATE, { octaveEvidence: false });
+    const withRule = analyseSpectrum(magnitudes, SAMPLE_RATE);
+
+    // Canary: this is what the first spike measured, and why the rule exists.
+    expect(withoutRule.best.midi).toBe(A2 + 12);
+    expect(withRule.best.midi).toBe(A2);
+    expect(withRule.octaveFlipped).toBe(true);
+  });
+
+  test('a note played on its own is not dragged down an octave', () => {
+    // The octave below always scores close, because every note's partials are
+    // the even partials of the note an octave below. It must not be chosen when
+    // there is nothing at its own fundamental.
+    const detection = detect(pianoTone(A4));
+    expect(detection.best.midi).toBe(A4);
+    expect(detection.octaveFlipped).toBe(false);
+  });
+});
+
+describe('the search range', () => {
+  test('a note outside the range is never named', () => {
+    // A knock in the low end of the piano is a perfect harmonic series: unbounded,
+    // it is named C1. The exercise range must exclude it.
+    const knock = synthesise([
+      { hz: midiToHz(24), amplitude: 0.9 },
+      { hz: midiToHz(24) * 2, amplitude: 0.5 },
+      { hz: midiToHz(24) * 3, amplitude: 0.3 },
+    ]);
+
+    const detection = analyseSpectrum(amplitudeSpectrum(knock), SAMPLE_RATE, {
+      lowMidi: 35,
+      highMidi: 86,
+    });
+    expect(detection.best.midi).toBeGreaterThanOrEqual(35);
+    expect(detection.best.midi).toBeLessThanOrEqual(86);
+  });
+});
+
+describe('the measured frequency', () => {
+  test('is the frequency that was played, not the nominal one', () => {
+    const flat = detect(pianoTone(A4, { cents: -30 }));
+    expect(flat.best.midi).toBe(A4);
+    const expected = 440 * Math.pow(2, -30 / 1200);
+    expect(flat.measuredHz).toBeGreaterThan(expected - 2);
+    expect(flat.measuredHz).toBeLessThan(expected + 2);
+  });
+});
+
