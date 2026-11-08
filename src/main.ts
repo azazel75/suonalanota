@@ -1,47 +1,80 @@
 /**
- * :Project:  suona-la-nota -- the app shell, and a proof that VexFlow draws
- * :Created:  sab 07 nov 2026 23:17:57 CET
+ * :Project:  suona-la-nota -- the exercise screen, one target at a time
+ * :Created:  dom 08 nov 2026 22:25:00 CET
  * :Author:   Alberto Berti <alberto@metapensiero.it>
  * :License:  GNU General Public License version 3 or later
  *
- * Fase 0: there is no exercise here yet. The two staves exist to prove that the
- * notation library and its fonts survive the bundler, which is the only part of
- * the rendering stack worth verifying before the spike says the app is viable.
- *
- * A whole note, not a half one: a VexFlow voice refuses to be drawn unless its
- * ticks fill the measure, and the exercise will show one note per measure
- * anyway.
+ * The page wiring of the exercise screen: pick a key of the active range, let
+ * the map in ./score/staff decide how it is written, and hand that to the
+ * drawing in ./score/sheet. One target, no keyboard, no name of the note: the
+ * map between staff and key is the exercise, and showing the answer would
+ * cancel it.
  */
-/*
- * Import from `vexflow/bravura`, not from `vexflow`: the full entry loads six
- * font families (Gonville, Petaluma...) that this page never uses, and in a PWA
- * aimed at a phone 600 kB of extra gzip is not a detail.
- */
-import { Factory } from 'vexflow/bravura';
+import { midiToItalian } from './audio/notes';
+import { drawTarget } from './score/sheet';
+import {
+  ADVANCED_RANGE,
+  BASE_RANGE,
+  equallyNearInBothClefs,
+  keysInRange,
+  nearestPlacement,
+  type Clef,
+  type KeyRange,
+} from './score/staff';
 
-async function drawStaves(): Promise<void> {
-  const host = document.getElementById('staff');
-  if (host === null) return;
+/** The clef of the last middle C drawn: that position alternates between the two. */
+let lastMiddleCClef: Clef | undefined;
 
-  try {
-    await document.fonts.ready;
+/** The last key asked for, so that the same one does not come twice in a row. */
+let lastKey: number | null = null;
 
-    const factory = new Factory({
-      renderer: { elementId: 'staff', width: 560, height: 240 },
-    });
-    const score = factory.EasyScore();
-    const system = factory.System({ x: 10, y: 10, width: 540 });
-
-    system.addStave({ voices: [score.voice(score.notes('C4/w'))] }).addClef('treble');
-    system.addStave({ voices: [score.voice(score.notes('C3/w'))] }).addClef('bass');
-
-    factory.draw();
-  } catch (error) {
-    // The page is the smoke test: a silent empty staff would be the worst
-    // possible outcome, so the failure is printed where the staff should be.
-    host.textContent = `VexFlow non ha disegnato: ${String(error)}`;
-    host.className = 'bad';
-  }
+function nextKey(range: KeyRange): number {
+  const keys = keysInRange(range);
+  const candidates = keys.length > 1 && lastKey !== null ? keys.filter((key) => key !== lastKey) : keys;
+  return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
-void drawStaves();
+/** Ask the map for the next target and put it on the staff. */
+function showTarget(range: KeyRange): void {
+  const host = document.querySelector<HTMLDivElement>('#target');
+  if (host === null) return;
+
+  const midi = nextKey(range);
+  const placement = nearestPlacement(midi, lastMiddleCClef);
+  // Only the middle C position reads the previous clef, and only it has to be
+  // remembered: everywhere else the key alone decides.
+  if (equallyNearInBothClefs(midi)) lastMiddleCClef = placement.clef;
+  lastKey = midi;
+  drawTarget(host, placement);
+}
+
+function currentRange(): KeyRange {
+  const chosen = document.querySelector<HTMLInputElement>('input[name="range"]:checked');
+  return chosen !== null && chosen.value === 'advanced' ? ADVANCED_RANGE : BASE_RANGE;
+}
+
+function showRange(range: KeyRange): void {
+  const label = document.getElementById('range-label');
+  if (label !== null) label.textContent = `${midiToItalian(range.lowest)}–${midiToItalian(range.highest)}`;
+}
+
+async function start(): Promise<void> {
+  await document.fonts.ready;
+
+  document.getElementById('next')?.addEventListener('click', () => showTarget(currentRange()));
+
+  for (const input of document.querySelectorAll<HTMLInputElement>('input[name="range"]')) {
+    input.addEventListener('change', () => {
+      const range = currentRange();
+      // A new range is a new sequence: nothing carried over from the old one.
+      lastKey = null;
+      showRange(range);
+      showTarget(range);
+    });
+  }
+
+  showRange(currentRange());
+  showTarget(currentRange());
+}
+
+void start();

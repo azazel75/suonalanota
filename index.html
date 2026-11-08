@@ -13,66 +13,89 @@
         --text: #e8eef5;
         --dim: #8fa3b8;
         --accent: #6cb6ff;
+        --paper: #fbf8f1;
       }
       * { box-sizing: border-box; }
       body {
         margin: 0;
-        padding: 24px 16px 60px;
+        padding: 20px 14px calc(28px + env(safe-area-inset-bottom));
         background: var(--bg);
         color: var(--text);
         font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+        -webkit-text-size-adjust: 100%;
       }
       main { max-width: 640px; margin: 0 auto; }
-      h1 { font-size: 24px; margin: 0 0 4px; letter-spacing: -0.02em; }
-      .lead { color: var(--dim); margin: 0 0 24px; }
-      .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 14px; }
+      h1 { font-size: 22px; margin: 0 0 2px; letter-spacing: -0.02em; }
+      .lead { color: var(--dim); margin: 0 0 18px; }
       h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--dim); margin: 0 0 10px; }
-      #staff svg { width: 100%; height: auto; }
+      .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px; margin-bottom: 14px; }
+
+      /* The staff is paper: black ink on a light sheet reads in sunlight too. */
+      .sheet { background: var(--paper); border-radius: 12px; padding: 10px 6px; }
+      .sheet svg { display: block; width: 100%; height: auto; }
+      .sheet.bad { padding: 24px 16px; color: #7a1d1d; font-size: 14px; }
+
+      .range { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; color: var(--dim); font-size: 14px; margin: 12px 2px 14px; }
+      .range strong { color: var(--text); font-weight: 600; }
+
+      button {
+        width: 100%;
+        min-height: 52px;
+        border: 0;
+        border-radius: 12px;
+        background: var(--accent);
+        color: #06121f;
+        font: inherit;
+        font-weight: 600;
+        font-size: 17px;
+      }
+      button:active { filter: brightness(0.92); }
+
+      fieldset { border: 0; margin: 0; padding: 0; }
+      legend { color: var(--dim); font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; padding: 0 0 8px; }
+      .choice { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: 15px; }
+      .choice input { width: 20px; height: 20px; accent-color: var(--accent); margin: 0; }
+
+      details { color: var(--dim); font-size: 14px; }
+      summary { cursor: pointer; padding: 6px 2px; }
       a { color: var(--accent); }
-      ul { margin: 6px 0 0; padding-left: 20px; color: var(--dim); }
-      li { margin-bottom: 4px; }
-      .tag { display: inline-block; font-size: 12px; color: var(--dim); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; }
+      ul { margin: 6px 0 0; padding-left: 20px; }
+      li { margin-bottom: 6px; }
     </style>
   </head>
   <body>
     <main>
-      <h1>Suona la nota</h1>
-      <p class="lead">Esercizi di lettura del pentagramma, con l'ascolto del pianoforte dal microfono.</p>
+      <header>
+        <h1>Suona la nota</h1>
+        <p class="lead">Leggi la nota sul rigo, poi suonala sul pianoforte.</p>
+      </header>
 
       <section class="card">
-        <h2>Fase 0</h2>
-        <p>
-          Il repository è in piedi: build statica, test del rilevatore, e lo spike che misura
-          quanto un telefono sente davvero un pianoforte. L'esercizio vero arriva dopo lo spike,
-          perché è lo spike a dire se l'ascolto dal microfono regge.
+        <!-- One target and nothing else on the staff: the whole question. -->
+        <div id="target" class="sheet" role="img" aria-label="Un rigo con una nota da leggere"></div>
+        <p class="range">
+          <span>Range attivo</span>
+          <strong id="range-label">Do3–Do5</strong>
         </p>
-        <p><span class="tag">niente backend</span> <span class="tag">niente MIDI</span> <span class="tag">una nota alla volta</span></p>
+        <button id="next" type="button">Un'altra nota</button>
       </section>
 
       <section class="card">
-        <h2>Il rigo, disegnato con VexFlow</h2>
-        <div id="staff"></div>
+        <fieldset>
+          <legend>Range</legend>
+          <label class="choice"><input type="radio" name="range" value="base" checked /> base · Do3–Do5</label>
+          <label class="choice"><input type="radio" name="range" value="advanced" /> avanzato · Si1–Re6</label>
+        </fieldset>
+      </section>
+
+      <details>
+        <summary>Strumenti di sviluppo</summary>
         <ul>
-          <li>Chiave di violino e chiave di basso, la stessa nota scritta nelle due chiavi.</li>
-          <li>Se questo si vede, VexFlow 5 e i suoi font funzionano sotto Vite.</li>
+          <li><a href="/spike/ascolto.html">Lo spike dell'ascolto</a> — che nota sente il microfono, con quanta confidenza.</li>
+          <li><a href="/spike/dispari.html">Sonda 1 · parziali dispari</a> — se l'ottava sotto è stata suonata o risuona.</li>
+          <li><a href="/spike/salita.html">Sonda 2 · salita delle bande</a> — se la banda dell'ottava sotto sale dopo quella della nota letta.</li>
         </ul>
-      </section>
-
-      <section class="card">
-        <h2>Spike dell'ascolto</h2>
-        <p>
-          <a href="/spike/ascolto.html">Lo spike principale</a> — mostra in tempo reale che nota sente
-          il microfono, con quanta confidenza, e scarica il log dei colpi.
-        </p>
-        <p>
-          <a href="/spike/dispari.html">Sonda 1 · parziali dispari</a> — se l'ottava sotto è stata
-          suonata o risuona, guardando se ha le parziali 3 5 7.
-        </p>
-        <p>
-          <a href="/spike/salita.html">Sonda 2 · salita delle bande</a> — se la banda dell'ottava sotto
-          sale dopo quella della nota letta.
-        </p>
-      </section>
+      </details>
     </main>
     <script type="module" src="/src/main.ts"></script>
   </body>
