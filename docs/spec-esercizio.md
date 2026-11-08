@@ -112,16 +112,24 @@ sbagliate. Durante la sessione un contatore discreto, non un HUD.
 
 ## Classifica
 
-**Requisito** (confermato da Emilia). Locale al dispositivo, con nickname facoltativo, e ordinata
-**per configurazione dell'esercizio** — range, durata e modalità: un punteggio di venti note al
-minuto sul range base e uno di otto sull'avanzato non si confrontano, e una sessione da due minuti
-batte sempre una da uno.
+**Requisito** (confermato da Emilia).
 
-Dieci voci per configurazione, la propria evidenziata anche quando sta fuori. Per voce: nickname,
-centrate, sbagliate, saltate, totale, note al minuto, data. Ogni voce si può cancellare, e c'è
-"svuota tutto" — è un telefono che passa di mano.
+- **Una riga per ragazzo**, non un elenco di tentativi: si tiene il run col punteggio migliore di
+  quel nickname. Un ragazzo che gioca cinque volte compare una volta, con la sua prova migliore.
+- Ordine: centrate, poi note al minuto, poi la data più recente.
+- **Nickname**: chiesto alla fine di ogni esercizio, con dentro il nome dell'ultimo run — chi ha già
+  giocato conferma e basta. Se il campo resta vuoto il nome è `utente1`, `utente2`, … il primo libero.
+- La classifica è **della configurazione in corso**: range, durata, timeout e modalità sono la chiave.
+  Un punteggio di venti note al minuto sul base e uno di otto sull'avanzato non si confrontano.
+- Vive in `localStorage`, non in memoria: si comporta allo stesso modo — cambiando configurazione si
+  vede un'altra classifica — ma un refresh involontario o un telefono che chiude il browser non
+  cancellano i risultati della lezione.
 
-Nessun dato lascia il dispositivo.
+## Le impostazioni si scelgono una volta
+
+Durata, range, timeout per bersaglio, tetto ai colpi e modalità (casuale, preset, lista) si impostano
+**prima** della sessione e durante la sessione non si toccano: cambiarle vorrebbe dire cambiare la
+prova a metà, e il punteggio perderebbe senso.
 
 ## Log
 
