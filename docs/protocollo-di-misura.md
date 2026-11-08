@@ -67,8 +67,25 @@ campo `probe`:
 | `/spike/salita.html` | `"probe": "salita"` | la banda dell'ottava sotto sale dopo quella della nota letta? |
 
 Protocollo: stesso telefono nella stessa posizione, coperchio chiuso, **tre pressioni staccate per
-nota**, sulle note dove il margine d'ottava è piccolo: **Do4, Fa4, Sol4, Sol#4** e il grave
-**Si1, Do2, Re2**. Scaricare i due JSON separatamente: si leggono l'uno senza l'altro.
+nota**, e — questo è il punto — **entrambi i membri di ogni coppia**: la nota grave, per vedere se il
+rilevatore la scambia per l'ottava sopra, e la sua ottava, per vedere se il rilevatore la tira giù.
+
+| coppia | grave | acuta |
+| --- | --- | --- |
+| Si | Si1 (35) | Si2 (47) |
+| Do | Do2 (36) | Do3 (48) |
+| Re | Re2 (38) | Re3 (50) |
+| Do centrale | Do4 (60) | Do5 (72) |
+| Fa | Fa4 (65) | Fa5 (77) |
+| Sol | Sol4 (67) | Sol5 (79) |
+| Sol# | Sol#4 (68) | Sol#5 (80) |
+
+Quattordici note, tre pressioni ciascuna: circa due minuti per sonda. Più **La3 e La4 come controllo**,
+dove il rilevatore è già sicuro: danno il rapporto dispari/pari di una corda davvero premuta, che è il
+termine di paragone senza cui i casi contesi non si leggono.
+
+Con una sola classe di note il discriminante non si può valutare: uno che rispondesse sempre "è
+risonanza" sarebbe perfetto su metà dei dati. Scaricare i due JSON separatamente.
 
 Cosa si guarda: nel primo il rapporto dispari/pari dell'ottava sotto (vicino a zero = risonanza);
 nel secondo il ritardo in ms fra la salita della banda grave e quella acuta (positivo = risonanza,
