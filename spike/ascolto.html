@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
+    <title>Suona la nota — spike ascolto</title>
+    <style>
+      :root {
+        --bg: #0b0f14;
+        --card: #131a22;
+        --line: #223040;
+        --text: #e8eef5;
+        --dim: #8fa3b8;
+        --good: #3ddc84;
+        --bad: #ff5d5d;
+        --warn: #ffc857;
+        --accent: #6cb6ff;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 12px 12px 40px;
+        background: var(--bg);
+        color: var(--text);
+        font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+        -webkit-text-size-adjust: 100%;
+      }
+      h1 { font-size: 17px; margin: 0; font-weight: 600; }
+      h2 { font-size: 14px; margin: 0 0 8px; color: var(--dim); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+      header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+      .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+      .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+      button {
+        font: inherit; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line);
+        background: #1b2735; color: var(--text); min-height: 44px;
+      }
+      button:active { transform: translateY(1px); }
+      button.primary { background: var(--accent); color: #08111c; border-color: var(--accent); font-weight: 600; }
+      button:disabled { opacity: 0.45; }
+      .badge { font-size: 12px; padding: 4px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--dim); }
+      .badge.on { color: var(--good); border-color: #1f6b45; }
+      .badge.off { color: var(--dim); }
+      #note { font-size: 46px; font-weight: 700; line-height: 1.05; letter-spacing: -0.02em; }
+      #note small { font-size: 16px; color: var(--dim); font-weight: 500; letter-spacing: 0; }
+      #note.good { color: var(--good); }
+      #note.bad { color: var(--bad); }
+      .facts { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-size: 13px; color: var(--dim); }
+      .facts b { color: var(--text); font-weight: 600; }
+      canvas { width: 100%; height: 190px; display: block; border-radius: 8px; background: #070b10; }
+      table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line); }
+      th { color: var(--dim); font-weight: 500; }
+      td.num { text-align: right; font-variant-numeric: tabular-nums; }
+      select { font: inherit; padding: 8px; border-radius: 8px; background: #1b2735; color: var(--text); border: 1px solid var(--line); max-width: 100%; }
+      .hint { color: var(--dim); font-size: 12.5px; margin: 6px 0 0; }
+      ol.steps { margin: 0; padding-left: 20px; }
+      ol.steps li { margin-bottom: 8px; }
+      .warn { color: var(--warn); }
+      .bad { color: var(--bad); }
+      .good { color: var(--good); }
+      #flash { font-size: 13px; min-height: 20px; color: var(--dim); }
+      .mono { font-variant-numeric: tabular-nums; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Spike · ascolto dal microfono</h1>
+      <span id="status" class="badge off">spento</span>
+    </header>
+
+    <section class="card">
+      <div class="row">
+        <button id="start" class="primary">Attiva il microfono</button>
+        <button id="stop" disabled>Ferma</button>
+        <button id="measure" disabled>Misura adesso</button>
+      </div>
+      <p class="hint" id="hint">
+        Il microfono richiede HTTPS o localhost. Su un telefono, apri questa pagina da un
+        indirizzo <code>https://</code>.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>Dispositivo</h2>
+      <div class="facts" id="device">
+        <span>stato</span><b>microfono spento</b>
+      </div>
+    </section>
+
+    <section class="card">
+      <div id="note">—</div>
+      <div class="facts" id="readout">
+        <span>livello</span><b id="level">—</b>
+        <span>margine</span><b id="margin">—</b>
+        <span>margine ottava</span><b id="octave">—</b>
+        <span>attacco</span><b id="onsets">—</b>
+      </div>
+      <div id="flash"></div>
+    </section>
+
+    <section class="card">
+      <h2>Spettro</h2>
+      <canvas id="spectrum" width="800" height="380"></canvas>
+      <p class="hint">Le righe verdi sono le prime 8 parziali della nota di riferimento: se la prima non c'è, il microfono non sente la fondamentale.</p>
+    </section>
+
+    <section class="card">
+      <h2>Candidati</h2>
+      <table>
+        <thead><tr><th>nota</th><th class="num">punteggio</th><th class="num">dB dal migliore</th></tr></thead>
+        <tbody id="candidates"></tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>Come si usa</h2>
+      <ol class="steps">
+        <li>Scegli la nota di riferimento qui sotto, suona quel tasto <b>3-4 volte staccando le note</b>. Non devi premere altro: ogni attacco viene registrato da solo.</li>
+        <li>Guarda la riga sotto la nota grande: <span class="good">giusto</span>, <span class="warn">ottava sbagliata</span>, <span class="bad">altra nota</span>.</li>
+        <li>Passa alla nota dopo con <b>◀</b> / <b>▶</b>: la tabella in fondo <b>non si azzera</b>, si riempie per nota. La riga più grave con soli "giusti" è il limite del telefono.</li>
+        <li>Alla fine: <b>Scarica log JSON</b>.</li>
+      </ol>
+      <p class="hint">
+        Non registra niente? Il livello in dBFS è sotto la soglia di silenzio (abbassala), oppure
+        la nota non ha abbastanza attacco: usa <b>Misura adesso</b> per forzare una lettura.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>Nota di riferimento</h2>
+      <div class="row">
+        <button id="ref-down">◀</button>
+        <select id="ref"></select>
+        <button id="ref-up">▶</button>
+      </div>
+      <p class="hint mono" id="ref-detail">—</p>
+      <p class="hint">
+        Le ottave sono quelle della notazione scientifica: <b>C4 è il Do centrale</b> (il quarto Do
+        contando da sinistra, 261,6 Hz) e i numeri crescono verso destra. La tastiera va da
+        <b>La0</b> a sinistra a <b>Do8</b> a destra. Se il display del tuo pianoforte chiama quel Do
+        "C3", è lo stesso tasto: fida della frequenza, non dell'etichetta.
+      </p>
+      <div class="row" style="margin-top: 10px">
+        <label class="hint">soglia silenzio <span id="gate-label" class="mono">0.0020</span></label>
+        <input id="gate" type="range" min="0.0002" max="0.02" step="0.0002" value="0.002" style="flex: 1; min-width: 160px" />
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Conteggi</h2>
+      <div class="facts" id="counters">
+        <span>colpi</span><b>0</b>
+      </div>
+      <table style="margin-top: 10px">
+        <thead><tr><th>riferimento</th><th class="num">colpi</th><th class="num">giusti</th><th class="num">ottave</th><th class="num">altri</th></tr></thead>
+        <tbody id="ref-table"></tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <div class="row">
+        <button id="download">Scarica log JSON</button>
+        <button id="noise">Misura il rumore della stanza</button>
+      </div>
+      <p class="hint" id="noise-out"></p>
+    </section>
+
+    <script type="module" src="/src/spike/main.ts"></script>
+  </body>
+</html>

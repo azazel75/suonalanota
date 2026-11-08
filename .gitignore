@@ -1,0 +1,7 @@
+node_modules/
+dist/
+result
+.direnv/
+.scratch/
+.agent-shell/
+*.log

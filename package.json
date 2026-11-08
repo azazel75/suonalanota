@@ -1,0 +1,24 @@
+{
+  "name": "suona-la-nota",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Esercizi di lettura del pentagramma con ascolto dal microfono",
+  "license": "GPL-3.0-or-later",
+  "author": "Alberto Berti <alberto@metapensiero.it>",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "types": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "vexflow": "^5.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "^8.3.6",
+    "vitest": "^5.1.0"
+  }
+}

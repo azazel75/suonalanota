@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
+    <title>Suona la nota</title>
+    <style>
+      :root {
+        --bg: #0b0f14;
+        --card: #131a22;
+        --line: #223040;
+        --text: #e8eef5;
+        --dim: #8fa3b8;
+        --accent: #6cb6ff;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 24px 16px 60px;
+        background: var(--bg);
+        color: var(--text);
+        font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      main { max-width: 640px; margin: 0 auto; }
+      h1 { font-size: 24px; margin: 0 0 4px; letter-spacing: -0.02em; }
+      .lead { color: var(--dim); margin: 0 0 24px; }
+      .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 14px; }
+      h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--dim); margin: 0 0 10px; }
+      #staff svg { width: 100%; height: auto; }
+      a { color: var(--accent); }
+      ul { margin: 6px 0 0; padding-left: 20px; color: var(--dim); }
+      li { margin-bottom: 4px; }
+      .tag { display: inline-block; font-size: 12px; color: var(--dim); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Suona la nota</h1>
+      <p class="lead">Esercizi di lettura del pentagramma, con l'ascolto del pianoforte dal microfono.</p>
+
+      <section class="card">
+        <h2>Fase 0</h2>
+        <p>
+          Il repository è in piedi: build statica, test del rilevatore, e lo spike che misura
+          quanto un telefono sente davvero un pianoforte. L'esercizio vero arriva dopo lo spike,
+          perché è lo spike a dire se l'ascolto dal microfono regge.
+        </p>
+        <p><span class="tag">niente backend</span> <span class="tag">niente MIDI</span> <span class="tag">una nota alla volta</span></p>
+      </section>
+
+      <section class="card">
+        <h2>Il rigo, disegnato con VexFlow</h2>
+        <div id="staff"></div>
+        <ul>
+          <li>Chiave di violino e chiave di basso, la stessa nota scritta nelle due chiavi.</li>
+          <li>Se questo si vede, VexFlow 5 e i suoi font funzionano sotto Vite.</li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>Spike dell'ascolto</h2>
+        <p>
+          <a href="/spike/ascolto.html">Apri lo spike</a> — mostra in tempo reale che nota sente il
+          microfono, con quanta confidenza, e scarica il log dei colpi.
+        </p>
+      </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
