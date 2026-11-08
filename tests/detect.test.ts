@@ -13,6 +13,7 @@ import { describe, expect, test } from 'vitest';
 import { analyseSpectrum, binWidth, isOctaveApart, peakAt } from '../src/audio/detect';
 import { amplitudeSpectrum, rms, toDecibels } from '../src/audio/fft';
 import { createOnsetDetector, median, spectralFlux } from '../src/audio/onset';
+import { bandEnergy, halfRiseMs, partialProfile, riseDelayMs } from '../src/audio/profile';
 import { midiToHz, midiToName, HIGHEST_MIDI, LOWEST_MIDI } from '../src/audio/notes';
 
 const SAMPLE_RATE = 48_000;
@@ -344,6 +345,51 @@ describe('the ambiguity of the octave', () => {
     const detection = detect(pianoTone(A4));
     expect(detection.octaveMarginDb).toBeGreaterThan(3);
     expect(detection.ambiguous).toBe(false);
+  });
+});
+
+describe('the two octave discriminants', () => {
+  // The physics both probes are built on. A pressed string has its odd partials;
+  // a string resonating in its even mode, driven by the octave above, does not.
+  function evenOnly(midi: number): Partial[] {
+    return [2, 4, 6].map((k) => ({ hz: midiToHz(midi) * k, amplitude: 1 / k }));
+  }
+
+  function allPartials(midi: number): Partial[] {
+    return Array.from({ length: 8 }, (_, index) => ({
+      hz: midiToHz(midi) * (index + 1),
+      amplitude: 1 / (index + 1),
+    }));
+  }
+
+  test('a string resonating in its even mode has no odd partials', () => {
+    const magnitudes = amplitudeSpectrum(synthesise(evenOnly(A2)));
+    const profile = partialProfile(magnitudes, SAMPLE_RATE, A2);
+    expect(profile.odd).toBeLessThan(profile.even * 0.05);
+    expect(profile.oddToEven).toBeLessThan(0.05);
+  });
+
+  test('a pressed string has them', () => {
+    const magnitudes = amplitudeSpectrum(synthesise(allPartials(A2)));
+    const profile = partialProfile(magnitudes, SAMPLE_RATE, A2);
+    expect(profile.oddToEven).toBeGreaterThan(0.4);
+  });
+
+  test('a band sits where the frequency is and is empty an octave below', () => {
+    const magnitudes = amplitudeSpectrum(synthesise(allPartials(A4)));
+    expect(bandEnergy(magnitudes, SAMPLE_RATE, midiToHz(A4))).toBeGreaterThan(0.5);
+    expect(bandEnergy(magnitudes, SAMPLE_RATE, midiToHz(A4) / 2)).toBeLessThan(0.05);
+  });
+
+  test('half rise is the frame where the band reaches half of its own peak', () => {
+    expect(halfRiseMs([0, 0, 0, 1, 2, 3], 20)).toBe(80);
+    expect(halfRiseMs([0, 0, 0], 20)).toBe(-1);
+  });
+
+  test('a band that rises two frames later is a resonance, in milliseconds', () => {
+    const upper = [0, 1, 2, 3, 3, 3];
+    const lower = [0, 0, 0, 1, 2, 3];
+    expect(riseDelayMs(lower, upper, 20)).toBe(40);
   });
 });
 

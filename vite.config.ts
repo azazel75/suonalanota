@@ -16,6 +16,8 @@ export default defineConfig({
       input: {
         app: 'index.html',
         spike: 'spike/ascolto.html',
+        dispari: 'spike/dispari.html',
+        salita: 'spike/salita.html',
       },
     },
   },

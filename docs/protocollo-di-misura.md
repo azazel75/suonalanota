@@ -56,6 +56,24 @@ l'accordatura, ma questo log non lo può né confermare né smentire: servirebbe
 volte più lunga.
 
 
+## Le due sonde dell'ottava
+
+Quando il pianoforte è disponibile, due pagine separate, ognuna col suo file JSON distinguibile dal
+campo `probe`:
+
+| pagina | file | domanda |
+| --- | --- | --- |
+| `/spike/dispari.html` | `"probe": "dispari"` | l'ottava sotto ha le parziali dispari (corda premuta) o solo le pari (corda che risuona)? |
+| `/spike/salita.html` | `"probe": "salita"` | la banda dell'ottava sotto sale dopo quella della nota letta? |
+
+Protocollo: stesso telefono nella stessa posizione, coperchio chiuso, **tre pressioni staccate per
+nota**, sulle note dove il margine d'ottava è piccolo: **Do4, Fa4, Sol4, Sol#4** e il grave
+**Si1, Do2, Re2**. Scaricare i due JSON separatamente: si leggono l'uno senza l'altro.
+
+Cosa si guarda: nel primo il rapporto dispari/pari dell'ottava sotto (vicino a zero = risonanza);
+nel secondo il ritardo in ms fra la salita della banda grave e quella acuta (positivo = risonanza,
+vicino a zero = corda premuta). Entrambi i file contengono i valori grezzi, non solo il verdetto.
+
 ## Cosa si conserva
 
 Il log JSON di ogni giro, con la data nel nome, fuori dal repository (contiene il `deviceId` del
