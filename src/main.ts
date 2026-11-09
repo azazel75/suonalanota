@@ -21,6 +21,7 @@
  */
 import { loadPortata, savePortata, type Portata } from './exercise/portata';
 import { settingsFromQuery, soundcheckRequired } from './exercise/settings';
+import { applyManifestTheme } from './pwa/manifest-theme';
 import { registerServiceWorker, applyUpdate } from './pwa/register';
 import { createExerciseScreen } from './screens/exercise';
 import { createSetupScreen, type SetupScreen } from './screens/setup';
@@ -101,6 +102,11 @@ async function main(): Promise<void> {
   // with a fake microphone start the exercise without a click. With a required
   // soundcheck the gesture that opens the microphone is the step's own button.
   if (autostart && !required) void exercise.start();
+
+  // The splash screen of the installed application follows the system, as the
+  // page does: the manifest is chosen here, before anyone can install it.
+  const manifestLink = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
+  if (manifestLink !== null) applyManifestTheme(manifestLink);
 
   // The shell updates when the reader says so: the bar appears if a new worker
   // is waiting, and the button is what reloads the page.

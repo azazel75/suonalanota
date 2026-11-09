@@ -256,6 +256,8 @@ stanza silenziosa, latenza attacco → verdetto < 400 ms. Il registro grave
   chiaro o scuro come lo è già il telefono.
 - [0022](docs/adr/0022-la-prima-nota-e-quella-che-vedi.md) — la prima nota è
   quella che vedi: Inizia apre il microfono, non un'altra nota.
+- [0023](docs/adr/0023-la-schermata-di-avvio-segue-il-tema.md) — la schermata di
+  avvio segue il tema: due manifest, uno per palette.
 
 ## Cosa non è ancora verificato
 

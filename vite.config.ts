@@ -18,6 +18,7 @@ import type { OutputBundle } from 'rolldown';
 import { defineConfig, type Plugin } from 'vitest/config';
 
 import {
+  MANIFEST_LIGHT_PATH,
   MANIFEST_PATH,
   manifestJson,
 } from './src/pwa/manifest';
@@ -30,6 +31,7 @@ import {
 import { appShell, fileContent } from './src/pwa/shell';
 
 const MANIFEST_FILE = MANIFEST_PATH.slice(1);
+const MANIFEST_LIGHT_FILE = MANIFEST_LIGHT_PATH.slice(1);
 const SW_FILE = 'sw.js';
 
 /** Manifest and worker, from the files this very build emitted. */
@@ -41,6 +43,16 @@ function pwa(): Plugin {
     generateBundle(_options, bundle: OutputBundle) {
       const manifest = manifestJson();
       this.emitFile({ type: 'asset', fileName: MANIFEST_FILE, source: manifest });
+      // The splash screen of the installed application is the manifest's
+      // background, and one file cannot be two colours: the page picks the
+      // variant that matches the system (ADR 0023). The light one is not in the
+      // shell — the browser reads it at install time, from the network — and it
+      // is versioned through the dark one, emitted from the same code.
+      this.emitFile({
+        type: 'asset',
+        fileName: MANIFEST_LIGHT_FILE,
+        source: manifestJson('light'),
+      });
 
       const shell = appShell(bundle);
       const version = cacheVersion([
