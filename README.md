@@ -21,7 +21,9 @@ cinque. La lista dell'insegnante si compone toccando i tasti di una tastiera, si
 esporta e si importa come file JSON, e resta sul telefono fra una lezione e
 l'altra. L'applicazione si installa e funziona senza rete: manifest e service
 worker escono dal build, e il guscio che si apre in classe è quello dell'ultima
-visita. Il **soundcheck** — cinque note per misurare che cosa il telefono sente
+visita; quando il guscio cambia, l'app lo dice con una barra e si aggiorna al
+tocco, mai a metà esercizio (ADR 0020). Il **soundcheck** — cinque note per
+misurare che cosa il telefono sente
 davvero — si fa a richiesta dalla configurazione, e la misura resta sul telefono
 finché non si rifà: chi apre l'applicazione per suonare non ci passa davanti.
 
@@ -246,6 +248,8 @@ stanza silenziosa, latenza attacco → verdetto < 400 ms. Il registro grave
   la nota, la pressione, il tentativo.
 - [0019](docs/adr/0019-le-proporzioni-del-rigo.md) — le proporzioni del rigo:
   il font segue lo spazio.
+- [0020](docs/adr/0020-il-guscio-si-aggiorna.md) — il guscio si aggiorna quando
+  l'utente dice sì.
 
 ## Cosa non è ancora verificato
 

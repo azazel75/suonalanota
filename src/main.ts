@@ -21,7 +21,7 @@
  */
 import { loadPortata, savePortata, type Portata } from './exercise/portata';
 import { settingsFromQuery, soundcheckRequired } from './exercise/settings';
-import { registerServiceWorker } from './pwa/register';
+import { registerServiceWorker, applyUpdate } from './pwa/register';
 import { createExerciseScreen } from './screens/exercise';
 import { createSetupScreen, type SetupScreen } from './screens/setup';
 import { createSoundcheckScreen } from './screens/soundcheck';
@@ -101,7 +101,16 @@ async function main(): Promise<void> {
   // with a fake microphone start the exercise without a click. With a required
   // soundcheck the gesture that opens the microphone is the step's own button.
   if (autostart && !required) void exercise.start();
-  registerServiceWorker();
+
+  // The shell updates when the reader says so: the bar appears if a new worker
+  // is waiting, and the button is what reloads the page.
+  const updateBar = element<HTMLDivElement>('update');
+  element<HTMLButtonElement>('update-apply').addEventListener('click', () => {
+    applyUpdate();
+  });
+  registerServiceWorker(() => {
+    updateBar.hidden = false;
+  });
 }
 
 void main();

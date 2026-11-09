@@ -99,9 +99,10 @@ function memoryCaches(bodies: Record<string, string>) {
 type Caches = ReturnType<typeof memoryCaches>;
 
 /** The worker, run the way a scope runs it: one `self`, one handler per event. */
-function loadWorker(source: string, caches: Caches) {
+function loadWorker(source: string, caches: Caches, active: unknown = null) {
   const handlers = new Map<string, (event: Record<string, unknown>) => void>();
   const waiting: Promise<void>[] = [];
+  const skipped: string[] = [];
   const online = async (input: FakeRequest): Promise<Response> => {
     if (input.url.endsWith('/offline')) throw new TypeError('the network is down');
     return new Response(`network:${input.url}`);
@@ -112,7 +113,11 @@ function loadWorker(source: string, caches: Caches) {
     addEventListener: (type: string, handler: (event: Record<string, unknown>) => void): void => {
       handlers.set(type, handler);
     },
-    skipWaiting: async (): Promise<void> => undefined,
+    // `active` is the worker the page already has, if any: null on a first visit.
+    registration: { active },
+    skipWaiting: async (): Promise<void> => {
+      skipped.push('skipWaiting');
+    },
     clients: { claim: async (): Promise<void> => undefined },
   };
 
@@ -120,10 +125,15 @@ function loadWorker(source: string, caches: Caches) {
 
   return {
     handlers,
+    skipped,
     /** Fire install or activate and let the promise the event carries finish. */
     async fire(type: string): Promise<void> {
       handlers.get(type)?.({ waitUntil: (promise: Promise<void>) => waiting.push(promise) });
       await Promise.all(waiting.splice(0));
+    },
+    /** Deliver a message, the way `postMessage` from the page would. */
+    message(data: unknown): void {
+      handlers.get('message')?.({ data });
     },
   };
 }
@@ -195,6 +205,40 @@ describe('the service worker the build writes', () => {
     await worker.fire('activate');
 
     expect(caches.deleted).toEqual([`${CACHE_PREFIX}old`]);
+  });
+
+  it('takes over at once when it is the first worker', async () => {
+    // A first visit has no worker serving: nothing to interrupt, and the shell
+    // has to be in place for the next opening.
+    const worker = loadWorker(serviceWorkerSource(SHELL, 'v1'), memoryCaches(shellBodies()), null);
+
+    await worker.fire('install');
+
+    expect(worker.skipped).toEqual(['skipWaiting']);
+  });
+
+  it('waits, when one is already serving, until the page says the reader accepts', async () => {
+    const worker = loadWorker(serviceWorkerSource(SHELL, 'v2'), memoryCaches(shellBodies()), {
+      state: 'activated',
+    });
+
+    await worker.fire('install');
+    expect(worker.skipped).toEqual([]);
+
+    worker.message({ type: 'SKIP_WAITING' });
+    expect(worker.skipped).toEqual(['skipWaiting']);
+  });
+
+  it('ignores a message that does not ask it to take over', () => {
+    const worker = loadWorker(serviceWorkerSource(SHELL, 'v2'), memoryCaches(shellBodies()), {
+      state: 'activated',
+    });
+
+    worker.message({ type: 'something-else' });
+    worker.message(null);
+    worker.message(undefined);
+
+    expect(worker.skipped).toEqual([]);
   });
 
   it('answers a navigation with the shell, whatever address and query it carries', async () => {

@@ -103,8 +103,18 @@ self.addEventListener('install', (event) => {
     caches
       .open(CACHE)
       .then((cache) => cache.addAll(SHELL))
-      .then(() => self.skipWaiting())
+      // The first worker takes over at once: it is what makes the app open
+      // offline. A later version waits for the page to offer it, so that a
+      // session in progress is never reloaded under the reader's hands.
+      .then(() => (self.registration.active === null ? self.skipWaiting() : undefined))
   );
+});
+
+self.addEventListener('message', (event) => {
+  // The page says the reader has accepted the update: now it can take over.
+  if (event.data !== null && event.data !== undefined && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('activate', (event) => {
