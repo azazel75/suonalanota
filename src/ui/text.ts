@@ -9,6 +9,9 @@
  * function, because a page that says "1 corrette" is a page nobody trusts with
  * a mark.
  */
-export function count(value: number, one: string, many: string): string {
-  return `${value} ${value === 1 ? one : many}`;
+export function count(value: number | string, one: string, many: string): string {
+  // A rate arrives already written the Italian way (`8,5`), and what decides the
+  // singular is only whether it is exactly one.
+  const text = typeof value === 'number' ? String(value) : value;
+  return `${text} ${text === '1' ? one : many}`;
 }

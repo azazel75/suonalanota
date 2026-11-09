@@ -96,7 +96,7 @@ export function createExerciseScreen(ports: ExercisePorts): ExerciseScreen {
     return running !== null || starting;
   }
 
-  /** Something on the paper before the allievo presses anything, on the chosen range. */
+  /** Something on the paper before the allievə presses anything, on the chosen range. */
   function drawPreview(): void {
     if (busy()) return;
     const keys = keysInRange(ports.settings().range);
@@ -211,7 +211,7 @@ export function createExerciseScreen(ports: ExercisePorts): ExerciseScreen {
         if (current === null) return;
         const frame = listener.push(samples, sampleRate, now);
         // The beep leaves this phone's speaker and comes back into its
-        // microphone: what it produces is not the allievo's colpo.
+        // microphone: what it produces is not the allievə's colpo.
         current.exercise.feed({
           at: now,
           levelDb: frame.levelDb,
@@ -231,7 +231,7 @@ export function createExerciseScreen(ports: ExercisePorts): ExerciseScreen {
     }
 
     // The sequence is drawn once, at the start: the range cannot be exhausted
-    // and refilled behind the allievo's back.
+    // and refilled behind the allievə's back.
     const exercise = createExercise({
       keys: sequenceFor(settings),
       config: sessionConfigOf(settings),

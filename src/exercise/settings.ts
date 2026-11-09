@@ -22,7 +22,7 @@
  *    session ends by itself with the engine's `targets` reason;
  *  - a **preset** or a **list** is filtered on the active range: the spec says
  *    no note outside the range is ever proposed, so the sequence shortens
- *    instead of asking for a key the allievo cannot play — and if nothing is
+ *    instead of asking for a key the allievə cannot play — and if nothing is
  *    left, `problemWith` says it instead of starting an empty session.
  *
  * The presets are a didactic choice, not a measurement: difficulty grows with
@@ -83,7 +83,7 @@ export const PRESETS: readonly Preset[] = [
   { id: 'due-chiavi', name: 'Le due chiavi', keys: BOTH_CLEFS },
 ];
 
-/** Everything the teacher chooses before the allievo starts. */
+/** Everything the teacher chooses before the allievə starts. */
 export interface Settings {
   /** The keys a session may ask for, lowest and highest included. */
   readonly range: KeyRange;
@@ -213,7 +213,7 @@ const LIST_OUTSIDE_RANGE = 'Nessun tasto della lista è nel range scelto.';
 /**
  * Why this trial cannot start, or `null` when it can. The page asks before
  * opening the microphone: a session without targets would be over before the
- * allievo sees the first note, and the summary would blame nobody.
+ * allievə sees the first note, and the summary would blame nobody.
  *
  * A list that is not empty but has nothing in the range is not an empty list,
  * and saying so would contradict the line under the keyboard that counts the

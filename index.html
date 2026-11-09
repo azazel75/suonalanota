@@ -4,6 +4,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0b0f14" />
+    <link rel="manifest" href="/manifest.json" />
+    <!-- iOS reads the manifest late and the touch icon not at all: two lines for the home screen. -->
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>Suona la nota</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <style>
@@ -59,6 +64,32 @@
       #log { margin-top: 0; }
       #restart { margin-top: 6px; }
 
+      /* The classifica: a short board on a phone, one row per ragazzə, and the
+         player's own row marked. The name is asked first because a row without a
+         name is a row nobody owns. */
+      .name-form { margin: 18px 0 4px; }
+      .name-form label { display: block; color: var(--dim); font-size: 14px; margin-bottom: 6px; }
+      .name-line { display: flex; gap: 8px; }
+      .name-line input[type="text"] { flex: 1 1 auto; min-width: 0; }
+      .name-line button { flex: 0 0 auto; width: auto; min-width: 104px; min-height: 44px; font-size: 16px; margin: 0; }
+      .board { list-style: none; margin: 10px 0 0; padding: 0; }
+      .board li {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        padding: 8px 10px;
+        margin: 0 0 6px;
+        border-radius: 10px;
+        background: #0e151d;
+      }
+      .board li.me { background: rgba(108, 182, 255, 0.16); box-shadow: inset 0 0 0 1px var(--accent); }
+      .board .place { color: var(--dim); min-width: 30px; font-variant-numeric: tabular-nums; }
+      .board .who { font-weight: 600; overflow-wrap: anywhere; }
+      .board .what { margin-left: auto; color: var(--dim); font-size: 14px; text-align: right; }
+      .board-empty { color: var(--dim); margin: 10px 0 0; }
+      .board-place { margin: 12px 0 0; font-weight: 600; }
+      .board-note { color: var(--dim); font-size: 13px; margin: 12px 0 0; }
+
       button {
         width: 100%;
         min-height: 52px;
@@ -83,7 +114,7 @@
       .field input[type="number"] { width: 96px; }
       .pair { display: flex; gap: 10px; flex-wrap: wrap; padding-top: 10px; }
       .pair label { display: flex; align-items: center; gap: 8px; font-size: 15px; }
-      select, input[type="number"] {
+      select, input[type="number"], input[type="text"] {
         font: inherit;
         color: var(--text);
         background: #0e151d;
@@ -255,6 +286,28 @@
         <div id="log-group" hidden>
           <p class="log-note">Il log della sessione: cosa è stato chiesto, cosa il microfono ha sentito, cosa ha deciso l'applicazione.</p>
           <button id="log" type="button" class="ghost">Scarica il log</button>
+        </div>
+
+        <div id="board-group" hidden>
+          <h2>Classifica</h2>
+
+          <form id="name-form" class="name-form">
+            <label for="player-name">Come ti chiami?</label>
+            <div class="name-line">
+              <input id="player-name" type="text" maxlength="20" autocomplete="nickname"
+                     enterkeyhint="done" spellcheck="false" />
+              <button id="save-score" type="submit">Salva</button>
+            </div>
+          </form>
+
+          <p id="board-place" class="board-place" role="status" hidden></p>
+          <p id="board-empty" class="board-empty" hidden>
+            Nessun punteggio su questa prova: il primo nome è il tuo.
+          </p>
+          <ol id="board" class="board"></ol>
+          <p class="board-note">
+            La classifica resta su questo telefono: nomi e punteggi non escono da qui.
+          </p>
         </div>
 
         <button id="restart" type="button">Torna all'inizio</button>

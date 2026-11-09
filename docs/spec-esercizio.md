@@ -5,7 +5,7 @@ questo documento non è completo e non è una descrizione dell'applicazione fini
 
 ## Il compito
 
-Una nota alla volta, scritta su un pentagramma in chiave di violino o di basso. L'allievo la suona
+Una nota alla volta, scritta su un pentagramma in chiave di violino o di basso. L'allievə la suona
 sul pianoforte; l'applicazione ascolta dal microfono. Nessuna tastiera sullo schermo: la mappa fra
 rigo e tasto è il compito, mostrarne la soluzione lo annulla.
 
@@ -93,7 +93,7 @@ dei due — solo l'invito a ripetere.
 Alla prima apertura, e su richiesta dalle impostazioni:
 
 1. permesso del microfono, che richiede un gesto esplicito;
-2. **compasso**: il ragazzo suona il tasto più basso e il più alto del suo strumento (di default si
+2. **compasso**: il ragazzə suona il tasto più basso e il più alto del suo strumento (di default si
    assume un pianoforte da 88 tasti; una tendina "quanti tasti" è una scorciatoia, non la verità);
 3. **portata udibile**: ripete i due estremi e una nota centrale, per misurare cosa il dispositivo
    sente davvero; un estremo non sentito restringe il range;
@@ -114,8 +114,8 @@ sbagliate. Durante la sessione un contatore discreto, non un HUD.
 
 **Requisito** (confermato da Emilia).
 
-- **Una riga per ragazzo**, non un elenco di tentativi: si tiene il run col punteggio migliore di
-  quel nickname. Un ragazzo che gioca cinque volte compare una volta, con la sua prova migliore.
+- **Una riga per ragazzə**, non un elenco di tentativi: si tiene il run col punteggio migliore di
+  quel nickname. Un ragazzə che gioca cinque volte compare una volta, con la sua prova migliore.
 - Ordine: corrette, poi note al minuto, poi la data più recente.
 - **Nickname**: chiesto alla fine di ogni esercizio, con dentro il nome dell'ultimo run — chi ha già
   giocato conferma e basta. Se il campo resta vuoto il nome è `utente1`, `utente2`, … il primo libero.
@@ -134,7 +134,7 @@ prova a metà, e il punteggio perderebbe senso.
 ## Log
 
 Ogni sessione produce un log scaricabile in JSON: bersaglio, altezza misurata, verdetto, istanti,
-impostazioni in vigore. Serve alla maestra per distinguere "il ragazzo sbaglia" da "l'applicazione
+impostazioni in vigore. Serve alla maestra per distinguere "il ragazzə sbaglia" da "l'applicazione
 sbaglia".
 
 ## Non ancora deciso

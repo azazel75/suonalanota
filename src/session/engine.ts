@@ -23,7 +23,7 @@
  * octave, so guessing would punish a correct answer. It costs no try, it is
  * only counted on the target (the log shows how unsure the device is on that
  * key), and a target closed by the clock with nothing but ambiguous colpi is
- * *skipped*, not *wrong*: the allievo has not tried yet.
+ * *skipped*, not *wrong*: the allievə has not tried yet.
  *
  * Three decisions this module makes, and why:
  *

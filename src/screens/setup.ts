@@ -21,7 +21,6 @@ import {
   loadList,
   saveList,
   toggleKey,
-  type StoragePort,
 } from '../exercise/list';
 import {
   DEFAULT_SETTINGS,
@@ -35,7 +34,7 @@ import {
 } from '../exercise/settings';
 import { layoutRow, octaveRows } from '../score/keyboard';
 import { ADVANCED_RANGE, BASE_RANGE, type KeyRange } from '../score/staff';
-import { element, saveFile } from '../ui/dom';
+import { browserStorage, element, saveFile } from '../ui/dom';
 import { count } from '../ui/text';
 import { describeList } from './setup-text';
 
@@ -61,15 +60,6 @@ export interface SetupPorts {
 
 /** The name of the file a teacher keeps and hands to another phone. */
 const LIST_FILE_NAME = 'lista-della-maestra.json';
-
-/** The browser's storage, or `null` when it refuses to be read at all. */
-function browserStorage(): StoragePort | null {
-  try {
-    return window.localStorage;
-  } catch {
-    return null;
-  }
-}
 
 export function createSetupScreen(ports: SetupPorts): SetupScreen {
   const lowestSelect = element<HTMLSelectElement>('lowest');

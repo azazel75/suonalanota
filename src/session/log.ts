@@ -6,7 +6,7 @@
  *
  * The file the summary hands over at the end of a session. It exists to answer
  * one question that the three counts cannot: when a note comes out wrong, is it
- * the allievo who missed it or the application that misheard it? So every
+ * the allievə who missed it or the application that misheard it? So every
  * bersaglio carries the colpi the microphone actually produced, with the
  * measurement each one arrived with, and the trial that was in force is written
  * beside them — a log of ten notes on the advanced range means nothing without
@@ -66,7 +66,7 @@ export interface ColpoMeasurement {
  * One colpo as the file writes it: the key it was heard as, the frequency the
  * microphone actually measured, and how sure the detector was. Both margins are
  * kept — against the runner-up and against the octave — because the second one
- * is what tells a teacher that the device, and not the allievo, was unsure.
+ * is what tells a teacher that the device, and not the allievə, was unsure.
  */
 export interface ColpoLog {
   /** The key the colpo was heard as, MIDI. */

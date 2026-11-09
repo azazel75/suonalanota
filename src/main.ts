@@ -16,6 +16,7 @@
  * already answered the question it would ask.
  */
 import { settingsFromQuery } from './exercise/settings';
+import { registerServiceWorker } from './pwa/register';
 import { createExerciseScreen } from './screens/exercise';
 import { createSetupScreen, type SetupScreen } from './screens/setup';
 import { createSummaryScreen } from './screens/summary';
@@ -65,6 +66,7 @@ async function main(): Promise<void> {
   // A measurement shortcut, not part of the flow: it lets a headless browser
   // with a fake microphone start the exercise without a click.
   if (autostart) void exercise.start();
+  registerServiceWorker();
 }
 
 void main();

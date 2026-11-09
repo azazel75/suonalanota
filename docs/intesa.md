@@ -5,7 +5,7 @@ e non fra mille righe.
 
 ## Cosa fa
 
-Un ragazzo di 10-13 anni legge una nota sul pentagramma e la suona. Un telefono ascolta il pianoforte
+Un ragazzə di 10-13 anni legge una nota sul pentagramma e la suona. Un telefono ascolta il pianoforte
 dal microfono, decide se il tasto premuto è quello giusto, e passa alla nota dopo quando lo è o
 quando il tempo è scaduto. Alla fine un punteggio: corrette, sbagliate, saltate.
 
@@ -66,7 +66,7 @@ Su un mezza coda Yamaha, coperchio chiuso, telefono Android di fascia media, mic
 | Do#5–Re6       | 85-100%                                              |
 
 Nessuna nota inventata fuori dal range; colpi duplicati scesi dal 11% all'1-3%; frequenza misurata
-registrata per ogni colpo, così un errore del rilevatore si distingue da un errore dell'allievo.
+registrata per ogni colpo, così un errore del rilevatore si distingue da un errore dell'allievə.
 
 ## Cosa non sappiamo
 

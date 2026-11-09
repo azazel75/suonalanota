@@ -5,7 +5,7 @@
  * :License:  GNU General Public License version 3 or later
  *
  * Between the microphone and the screen there is a rule, and this is it: what
- * each colpo does to what the allievo sees, when a target moves on, when the
+ * each colpo does to what the allievə sees, when a target moves on, when the
  * page has to say "check the volume" instead of counting, and when the session
  * is over.
  *
@@ -25,7 +25,7 @@
  *
  *  - **silence** is not an error: five seconds with the microphone at the noise
  *    floor mean the instrument is off, or the headphones are on, and telling
- *    the allievo about it is better than letting the targets scroll by;
+ *    the allievə about it is better than letting the targets scroll by;
  *  - the **clock** is whatever the frames say: the page stops sending them when
  *    the tab is hidden, and a tab that is not watched is not a session being
  *    played.

@@ -33,3 +33,23 @@ export function saveFile(name: string, text: string, type: string): void {
   // Revoking at once cuts the download off on some browsers; a second is enough.
   window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
 }
+
+/** What the page needs from the browser's `localStorage`, and nothing more. */
+export interface WebStorage {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+}
+
+/**
+ * The browser's storage, or `null` when it refuses to be read at all: a phone in
+ * private mode throws on the property itself, before the first `getItem`. Two
+ * screens remember things — the teacher's list and the classifica — and neither
+ * has to know that this is the line where a browser says no.
+ */
+export function browserStorage(): WebStorage | null {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}

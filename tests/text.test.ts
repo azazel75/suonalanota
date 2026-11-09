@@ -24,4 +24,9 @@ describe('counting out loud', () => {
     expect(count(3, 'corretta', 'corrette')).toBe('3 corrette');
     expect(count(21, 'tasto', 'tasti')).toBe('21 tasti');
   });
+
+  it('takes a rate already written the Italian way, and still agrees', () => {
+    expect(count('8,5', 'nota', 'note')).toBe('8,5 note');
+    expect(count('1', 'nota', 'note')).toBe('1 nota');
+  });
 });

@@ -1,6 +1,6 @@
 # suona-la-nota
 
-Esercizi di lettura del pentagramma per ragazzi di 10-13 anni: l'applicazione mostra una nota alla
+Esercizi di lettura del pentagramma per ragazzə di 10-13 anni: l'applicazione mostra una nota alla
 volta, in chiave di violino e di basso, ascolta il pianoforte dal microfono e passa alla nota
 successiva quando sente il tasto giusto o quando scade il tempo. Alla fine dà il punteggio:
 quante corrette, quante sbagliate, quante saltate.
@@ -12,9 +12,12 @@ che lascia la nota più vicina al rigo, ascolta il pianoforte dal microfono e ri
 sulla nota giusta, rosso sulla sbagliata, e quando l'ottava è incerta non giudica — chiede di
 ripetere. Otto secondi per bersaglio, pausa, e la sessione che si chiude da sola a tempo scaduto o a
 lista esaurita. A fine sessione i tre conteggi, le note al minuto e le note da rivedere, scritte sul
-rigo con la loro chiave. La lista della maestra si compone toccando i tasti di una tastiera, si esporta
-e si importa come file JSON, e resta sul telefono fra una lezione e l'altra.
-Mancano il soundcheck, la classifica e la PWA offline.
+rigo con la loro chiave; poi il nome, una riga per ragazzə nella classifica della prova, e la
+posizione anche quando è sotto le prime cinque. La lista della maestra si compone toccando i tasti di
+una tastiera, si esporta e si importa come file JSON, e resta sul telefono fra una lezione e l'altra.
+L'applicazione si installa e funziona senza rete: manifest e service worker escono dal build, e il
+guscio che si apre in classe è quello dell'ultima visita.
+Manca il soundcheck.
 
 ## La prova si può dettare dall'URL
 
@@ -174,13 +177,17 @@ attacco → verdetto < 400 ms. Il registro grave (A0-B2) si misura e si riporta,
 - [0010](docs/adr/0010-il-feedback-e-il-silenzio.md) — il feedback, il silenzio, la pausa.
 - [0011](docs/adr/0011-la-prova-dettata-dall-url.md) — il wizard della prova e l'URL che lo salta.
 - [0012](docs/adr/0012-i-due-file.md) — i due file JSON: la lista della maestra e il log.
+- [0013](docs/adr/0013-le-schermate-come-moduli.md) — una schermata, un modulo.
+- [0014](docs/adr/0014-il-verdetto-si-chiama-corretta.md) — il verdetto si chiama «corretta».
+- [0015](docs/adr/0015-la-classifica-locale.md) — la classifica del telefono, una riga per ragazzə.
+- [0016](docs/adr/0016-il-guscio-offline.md) — manifest e service worker emessi dal build.
 
 ## Cosa non è ancora verificato
 
 - **L'acustica.** I test coprono l'aritmetica del rilevatore su segnali sintetici. Nessun pianoforte
   vero è ancora passato dal microfono di un telefono vero: è esattamente ciò che lo spike deve
   misurare, e finché non è misurato non ci sono stime di tempi.
-- **Il rigo in mano a un ragazzo.** La grafica è verificata in un browser senza testa a 390×844: non
+- **Il rigo in mano a un ragazzə.** La grafica è verificata in un browser senza testa a 390×844: non
   su un telefono vero, alla luce di una stanza, con le dita di chi suona.
 
 ## Com'è fatto il repository

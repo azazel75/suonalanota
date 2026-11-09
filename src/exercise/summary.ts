@@ -5,7 +5,7 @@
  * :License:  GNU General Public License version 3 or later
  *
  * The numbers and the notes of a session that is over. The three verdicts stay
- * apart — wrong means the allievo tried and missed, skipped means nobody tried —
+ * apart — wrong means the allievə tried and missed, skipped means nobody tried —
  * and the notes to look at again are **written on the staff**, in the clef they
  * were asked in, because a ten-year-old reads the staff and not the word "Do4".
  *
@@ -15,7 +15,7 @@ import { midiToItalian } from '../audio/notes';
 import { nearestPlacement, placeOnStaff, type Clef, type Placement } from '../score/staff';
 import type { EndReason, SessionState } from '../session/engine';
 
-/** A note of the summary, drawn as the allievo saw it. */
+/** A note of the summary, drawn as the allievə saw it. */
 export interface SummaryNote {
   readonly key: number;
   /** Italian name, for the screen reader: the eye reads the staff. */
@@ -55,7 +55,7 @@ const RATE = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 1 });
  *
  * `clefs` is the clef each key was actually written in during the session —
  * only the middle C can be written two ways, and showing it on the other staff
- * would be a different note from the one the allievo saw.
+ * would be a different note from the one the allievə saw.
  */
 export function summarise(
   state: SessionState,

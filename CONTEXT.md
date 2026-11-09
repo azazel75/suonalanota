@@ -1,6 +1,6 @@
 # Suona la nota
 
-Esercizi di lettura del pentagramma per ragazzi di 10-13 anni: una nota alla volta, mentre
+Esercizi di lettura del pentagramma per ragazzə di 10-13 anni: una nota alla volta, mentre
 l'applicazione ascolta il pianoforte dal microfono del dispositivo.
 
 ## Language
@@ -16,7 +16,7 @@ Il segno scritto sul rigo: una posizione più una chiave. Non è il suono, e non
 _Avoid_: usare "nota" per il suono prodotto o per il tasto premuto
 
 **Tasto**:
-Il tasto fisico del pianoforte, identificato dal suo numero MIDI. È ciò che il ragazzo preme, ed
+Il tasto fisico del pianoforte, identificato dal suo numero MIDI. È ciò che il ragazzə preme, ed
 è ciò che il bersaglio indica.
 _Avoid_: nota, chiave
 
@@ -86,11 +86,11 @@ _Avoid_: giusta, ok, centrata
 
 **Sbagliata**:
 Il verdetto di un bersaglio chiuso da un numero di colpi errati, o dal tempo scaduto dopo almeno
-un tentativo. Il ragazzo ha provato e non ci è riuscito.
+un tentativo. Il ragazzə ha provato e non ci è riuscito.
 _Avoid_: errata, fallita, sbagliato
 
 **Saltata**:
-Il verdetto di un bersaglio chiuso dal tempo scaduto senza nessun colpo. Il ragazzo non ha
+Il verdetto di un bersaglio chiuso dal tempo scaduto senza nessun colpo. Il ragazzə non ha
 provato: non è un errore, ed è per questo che non si chiama "sbagliata".
 _Avoid_: mancata, non risolta, timeout
 
@@ -98,12 +98,25 @@ _Avoid_: mancata, non risolta, timeout
 I conteggi dei verdetti di una sessione, più le note al minuto. Non è un numero unico.
 _Avoid_: voto, risultato, score
 
+**Classifica**:
+Le prove migliori di un telefono, una riga per ragazzə, per la prova in forza. Non è un elenco di
+tentativi, non è il punteggio di una sessione, e non esce dal dispositivo.
+_Avoid_: ranking, high score, tabellone
+
 ### Il pubblico
 
-**Allievo**:
+**Allievə**:
 Chi suona, fra i 10 e i 13 anni.
 _Avoid_: bambino, utente, studente
 
 **Maestra**:
 Chi prepara gli esercizi e legge i punteggi. In famiglia è anche chi apre l'applicazione.
 _Avoid_: insegnante, docente, admin
+
+### La lingua
+
+Le parole per le persone si scrivono con la **schwa**, che non è né maschile né femminile: *allievə*,
+*ragazzə*, e *ragazzə* vale anche al plurale. Il prodotto la usa nel testo che mostra, i documenti
+vivi e i commenti del codice la usano; gli ADR storici (0001–0014) restano come sono stati scritti.
+**Maestra** fa eccezione: è la persona che il prodotto racconta, e il suo nome è anche quello del
+file che compone (`lista-della-maestra.json`, ADR 0012).
