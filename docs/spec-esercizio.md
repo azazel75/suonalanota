@@ -17,7 +17,7 @@ Sessione di 60 secondi, configurabile. L'orologio parte quando appare il primo b
 esiste ma non consuma tempo. La sessione finisce quando scade il tempo **o** quando la lista dei
 bersagli è esaurita, e il riepilogo dice quale delle due.
 
-## Range delle note
+## Intervallo delle note
 
 Due preset, entrambi configurabili come minimo e massimo:
 
@@ -26,22 +26,25 @@ Due preset, entrambi configurabili come minimo e massimo:
 | **base** | Do3 – Do5 | 48 – 72 |
 | **avanzato** | Si1 – Re6 | 35 – 86 |
 
-Il range effettivo è l'**intersezione di tre vincoli**:
+L'intervallo effettivo è l'**intersezione di tre vincoli**:
 
 ```
-range nominale  ∩  compasso dello strumento  ∩  portata udibile misurata
+intervallo nominale  ∩  estensione dello strumento  ∩  portata udibile misurata
 ```
 
-Il compasso si assume quello di un pianoforte (88 tasti, La0–Do8) finché il soundcheck non misura
+L'estensione entra nella portata misurata: i due estremi che il dispositivo ha sentito *sono*
+l'estensione, e un estremo muto porta quel bordo al Do centrale invece di indovinare l'ottava.
+
+L'estensione si assume quella di un pianoforte (88 tasti, La0–Do8) finché il soundcheck non misura
 altro; la tendina "quanti tasti" serve solo come scorciatoia per non proporre note che non esistono.
 Su una tastiera da 61 tasti (Do2–Do7) l'intersezione con l'avanzato parte da Do2, cioè dal primo tasto
-dello strumento: il soundcheck lo escluderà comunque, ma è il motivo per cui il compasso entra nel
+dello strumento: il soundcheck lo escluderà comunque, ma è il motivo per cui l'estensione entra nel
 conto e non è una costante.
 
-Nessuna nota fuori dal range attivo viene **proposta** né **cercata**: il range limita anche la
+Nessuna nota fuori dall'intervallo attivo viene **proposta** né **cercata**: l'intervallo limita anche la
 ricerca del rilevatore, non solo il generatore della sequenza.
 
-Il range nominale è quello della tabella. Il range **effettivo** lo misura il soundcheck e può
+L'intervallo nominale è quello della tabella. L'intervallo **effettivo** lo misura il soundcheck e può
 soltanto restringerlo (vedi ADR 0004): su un telefono di fascia media la parte 49–78 Hz è risultata
 inaudibile, quindi l'avanzato, su quel dispositivo, parte più in alto — e se il limite misurato
 arrivasse a Do3 l'avanzato coinciderebbe col base. Non è un difetto della misura: è la misura.
@@ -60,7 +63,7 @@ sarà un esercizio a sé: non è questa.
 
 Tre modi, scelti prima di iniziare:
 
-- **casuale** nel range attivo, senza ripetizione di una nota già uscita nella sequenza;
+- **casuale** nell'intervallo attivo, senza ripetizione di una nota già uscita nella sequenza;
 - **preset** progressivi, forniti con l'applicazione;
 - **lista** preparata dalla maestra, modificabile in-app e esportabile come JSON.
 
@@ -90,20 +93,22 @@ dei due — solo l'invito a ripetere.
 
 ## Soundcheck
 
-Alla prima apertura, e su richiesta dalle impostazioni:
+Su richiesta dalla configurazione, e prima della prova quando il link lo impone (`?soundcheck=1`):
 
 1. permesso del microfono, che richiede un gesto esplicito;
-2. **compasso**: il ragazzə suona il tasto più basso e il più alto del suo strumento (di default si
+2. **estensione**: il ragazzə suona il tasto più basso e il più alto del suo strumento (di default si
    assume un pianoforte da 88 tasti; una tendina "quanti tasti" è una scorciatoia, non la verità);
 3. **portata udibile**: ripete i due estremi e una nota centrale, per misurare cosa il dispositivo
-   sente davvero; un estremo non sentito restringe il range;
+   sente davvero; un estremo non sentito restringe l'intervallo;
 4. **cuffie e volume**: se il livello resta al rumore di fondo, il messaggio è "controlla il volume
    dello strumento, o togli le cuffie" — non "tempo scaduto". Su una tastiera elettronica suonare in
    cuffia è normalissimo, e senza questo controllo l'applicazione sembra rotta.
 
-Può essere saltato, ma in quel caso i range che il dispositivo non ha dimostrato di sentire vengono
-esclusi di default. Lo stesso controllo "sei in cuffia o a volume zero" vale durante un esercizio:
-dopo circa 5 secondi di silenzio assoluto, il messaggio compare al posto del conteggio.
+Può essere saltato, e in quel caso valgono gli **intervalli nominali**: il dispositivo non ha dimostrato
+niente, e non dimostrare niente non è una prova contro. La misura è del telefono, non della prova, e
+resta finché non si rifà; l'intersezione con l'intervallo scelto si calcola quando la sessione parte. Lo
+stesso controllo "sei in cuffia o a volume zero" vale durante un esercizio: dopo circa 5 secondi di
+silenzio assoluto, il messaggio compare al posto del conteggio.
 
 ## Punteggio e classifica
 
@@ -119,7 +124,7 @@ sbagliate. Durante la sessione un contatore discreto, non un HUD.
 - Ordine: corrette, poi note al minuto, poi la data più recente.
 - **Nickname**: chiesto alla fine di ogni esercizio, con dentro il nome dell'ultimo run — chi ha già
   giocato conferma e basta. Se il campo resta vuoto il nome è `utente1`, `utente2`, … il primo libero.
-- La classifica è **della configurazione in corso**: range, durata, timeout e modalità sono la chiave.
+- La classifica è **della configurazione in corso**: intervallo, durata, timeout e modalità sono la chiave.
   Un punteggio di venti note al minuto sul base e uno di otto sull'avanzato non si confrontano.
 - Vive in `localStorage`, non in memoria: si comporta allo stesso modo — cambiando configurazione si
   vede un'altra classifica — ma un refresh involontario o un telefono che chiude il browser non
@@ -127,7 +132,7 @@ sbagliate. Durante la sessione un contatore discreto, non un HUD.
 
 ## Le impostazioni si scelgono una volta
 
-Durata, range, timeout per bersaglio, tetto ai colpi e modalità (casuale, preset, lista) si impostano
+Durata, intervallo, timeout per bersaglio, tetto ai colpi e modalità (casuale, preset, lista) si impostano
 **prima** della sessione e durante la sessione non si toccano: cambiarle vorrebbe dire cambiare la
 prova a metà, e il punteggio perderebbe senso.
 

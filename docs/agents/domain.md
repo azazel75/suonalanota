@@ -8,7 +8,7 @@ codebase.
 - **`CONTEXT.md`** at the repo root — il glossario: bersaglio, colpo, colpo ambiguo, verdetto,
   portata udibile, soundcheck, credibilità.
 - **`docs/adr/`** — leggere gli ADR che toccano l'area in cui si sta per lavorare. Qui ce ne sono
-  sedici, e quattro riguardano il rilevatore: sbagliare l'ordine di lettura significa rifare errori già
+  diciassette, e quattro riguardano il rilevatore: sbagliare l'ordine di lettura significa rifare errori già
   misurati.
 - **`docs/spec-esercizio.md`** — cosa fa l'applicazione, con i numeri decisi.
 - **`docs/intesa.md`** — la pagina che chiude il colloquio: se il lavoro contraddice quella, va
@@ -27,7 +27,7 @@ Single-context repo (questo):
 ├── docs/
 │   ├── adr/
 │   │   ├── 0001-ascolto-solo-microfono.md
-│   │   └── … 0016-il-guscio-offline.md
+│   │   └── … 0017-il-soundcheck.md
 │   ├── intesa.md
 │   ├── spec-esercizio.md
 │   └── protocollo-di-misura.md
@@ -36,7 +36,7 @@ Single-context repo (questo):
     ├── exercise/   la prova, i suoi numeri, la lista della maestra
     ├── pwa/        il guscio: manifest, service worker, registrazione
     ├── score/      il rigo e la tastiera, disegnati
-    ├── screens/    una schermata, un modulo (setup, exercise, summary, wizard)
+    ├── screens/    una schermata, un modulo (avvio, setup, exercise, summary, wizard)
     ├── session/    la macchina a stati e il log
     ├── spike/      le pagine di misura, fuori dal flusso dell'applicazione
     └── ui/         il DOM e le frasi

@@ -18,9 +18,9 @@
  *    by a program: `tasto`, `verdetto`, `colpi`; a field name in English would
  *    send her looking for a dictionary. The code around them stays English, as
  *    everywhere else in this repository;
- *  - **a value that was not measured is `null`, never a plausible number**:
- *    there is no soundcheck yet, so `range_misurato` is false and says so in the
- *    file rather than letting a nominal range pass for a measured one;
+ *  - **a value that was not measured is `null`, never a plausible number**: when
+ *    the soundcheck has not been run, `range_misurato` is false and says so in
+ *    the file rather than letting a nominal range pass for a measured one;
  *  - **the shape does not depend on the session**: every field is always there,
  *    in the same order, so two files can be read side by side and the indent of
  *    `JSON.stringify` is enough to read one on a phone.
@@ -119,22 +119,22 @@ export interface SessionLogInput {
   /** What the exercise heard, one entry per bersaglio, in the order it asked. */
   readonly targets: readonly TargetLog[];
   /**
-   * Whether the range was measured by a soundcheck. False today: there is no
-   * soundcheck yet, and a file that stayed silent about it would pass the
-   * nominal range for the portata udibile.
+   * Whether the range was measured by a soundcheck. False when the step was
+   * skipped or never asked, and a file that stayed silent about it would pass
+   * the nominal range for the portata udibile.
    */
   readonly rangeMeasured?: boolean;
   /**
    * The range the soundcheck actually measured, when it measured one. `null`
-   * today: there is no soundcheck yet, and when it arrives it will pass the
-   * intersection it computed instead of the nominal range (`docs/adr/0012`).
+   * when it did not: the file must not let a nominal range pass for the
+   * intersection the device proved (`docs/adr/0012`).
    */
   readonly rangeEffective?: KeyRange;
 }
 
 /** The settings block, as the file writes it. */
 export interface SettingsLog {
-  readonly range: { readonly minimo: number; readonly massimo: number };
+  readonly intervallo: { readonly minimo: number; readonly massimo: number };
   readonly durata_secondi: number;
   readonly tempo_per_bersaglio_secondi: number;
   readonly tetto_colpi: number | null;
@@ -149,9 +149,9 @@ export interface SessionLog {
   readonly quando: string;
   readonly impostazioni: SettingsLog;
   readonly soundcheck: {
-    readonly range_misurato: boolean;
+    readonly intervallo_misurato: boolean;
     /** The range the soundcheck narrowed the trial to; `null` when it did not run. */
-    readonly range_effettivo: { readonly minimo: number; readonly massimo: number } | null;
+    readonly intervallo_effettivo: { readonly minimo: number; readonly massimo: number } | null;
     readonly nota: string;
   };
   readonly fine: { readonly motivo: string | null; readonly secondi: number };
@@ -195,12 +195,12 @@ const END_NAMES: Readonly<Record<EndReason, string>> = {
 };
 
 const NOT_MEASURED =
-  'Il soundcheck non è ancora stato fatto: la portata udibile non è misurata, e il range scritto ' +
+  "Il soundcheck non è stato fatto: la portata udibile non è misurata, e l'intervallo scritto " +
   'qui è quello nominale della prova.';
 
 const MEASURED =
-  'Il soundcheck ha misurato la portata udibile: il range effettivo è quello scritto qui, ed è ' +
-  "l'intersezione fra il range nominale, il compasso dello strumento e ciò che il microfono sente.";
+  "Il soundcheck ha misurato la portata udibile: l'intervallo effettivo è quello scritto qui, ed è " +
+  "l'intersezione fra l'intervallo nominale, l'estensione dello strumento e ciò che il microfono sente.";
 
 /**
  * One colpo, measured or not. `at` is the frame's instant, used only when the
@@ -239,7 +239,7 @@ export function sessionLog(input: SessionLogInput): SessionLog {
     versione: LOG_VERSION,
     quando: input.when.toISOString(),
     impostazioni: {
-      range: { minimo: settings.range.lowest, massimo: settings.range.highest },
+      intervallo: { minimo: settings.range.lowest, massimo: settings.range.highest },
       durata_secondi: settings.durationMs / 1000,
       tempo_per_bersaglio_secondi: settings.targetTimeoutMs / 1000,
       tetto_colpi: settings.wrongLimit,
@@ -248,8 +248,8 @@ export function sessionLog(input: SessionLogInput): SessionLog {
       preset: settings.mode === 'preset' && preset !== undefined ? preset.name : null,
     },
     soundcheck: {
-      range_misurato: input.rangeMeasured ?? false,
-      range_effettivo: input.rangeEffective === undefined
+      intervallo_misurato: input.rangeMeasured ?? false,
+      intervallo_effettivo: input.rangeEffective === undefined
         ? null
         : { minimo: input.rangeEffective.lowest, massimo: input.rangeEffective.highest },
       nota: (input.rangeMeasured ?? false) ? MEASURED : NOT_MEASURED,

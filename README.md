@@ -5,7 +5,7 @@ volta, in chiave di violino e di basso, ascolta il pianoforte dal microfono e pa
 successiva quando sente il tasto giusto o quando scade il tempo. Alla fine dà il punteggio:
 quante corrette, quante sbagliate, quante saltate.
 
-**Stato: la prova e il riepilogo.** La pagina è un wizard: prima si sceglie la prova — range con
+**Stato: la prova e il riepilogo.** La pagina è un wizard: prima si sceglie la prova — intervallo con
 minimo e massimo, durata, tempo per bersaglio, tetto ai colpi, sequenza casuale, da preset o dalla
 lista della maestra — e solo dopo compare il rigo. Il rigo mostra un bersaglio alla volta, nella chiave
 che lascia la nota più vicina al rigo, ascolta il pianoforte dal microfono e risponde subito: verde
@@ -16,8 +16,9 @@ rigo con la loro chiave; poi il nome, una riga per ragazzə nella classifica del
 posizione anche quando è sotto le prime cinque. La lista della maestra si compone toccando i tasti di
 una tastiera, si esporta e si importa come file JSON, e resta sul telefono fra una lezione e l'altra.
 L'applicazione si installa e funziona senza rete: manifest e service worker escono dal build, e il
-guscio che si apre in classe è quello dell'ultima visita.
-Manca il soundcheck.
+guscio che si apre in classe è quello dell'ultima visita. Il **soundcheck** — cinque note per misurare
+che cosa il telefono sente davvero — si fa a richiesta dalla configurazione, e la misura resta sul
+telefono finché non si rifà: chi apre l'applicazione per suonare non ci passa davanti.
 
 ## La prova si può dettare dall'URL
 
@@ -33,6 +34,13 @@ compare; i parametri che non ci sono restano ai default.
 | `cap` | colpi errati che chiudono un bersaglio; assente o minore di 1 = nessun tetto | assente |
 | `mode` | `random`, `preset`, `list` | `random` |
 | `preset` | `prime-note`, `rigo-di-basso`, `due-chiavi`; un id che non esiste ricade su `prime-note` | `prime-note` |
+| `soundcheck` | `1` fa passare dalla misura dell'ascolto prima della prova | assente |
+
+`soundcheck` non è un parametro della prova: non fa saltare la configurazione, la apre, e la misura
+viene prima di tutto il resto. Venendo da un link che lo impone, se una misura c'è già la schermata la
+offre; se la misura non riesce, l'unica uscita senza portata è il bottone «Continua senza misurare».
+Con `soundcheck=1`, `autostart` non fa partire la sessione da solo: il gesto che apre il microfono è
+il bottone della misura.
 
 ```text
 https://…/?range=advanced&duration=120&timeout=6
@@ -64,7 +72,7 @@ ricaricamento e alla chiusura del browser, ma non passa a un altro telefono — 
 `tasti` sono numeri MIDI, nell'ordine in cui vanno chiesti. Un tasto fuori dai 88 del pianoforte
 (21–108) viene segnalato e lasciato fuori; un file che non è quello — un altro JSON, o una versione che
 l'applicazione non conosce — viene rifiutato con una frase in italiano, e la lista di prima resta. I
-tasti della lista fuori dal range attivo restano nella lista ma non vengono chiesti: una riga sotto la
+tasti della lista fuori dall'intervallo attivo restano nella lista ma non vengono chiesti: una riga sotto la
 tastiera dice quanti sono.
 
 ## Il log della sessione
@@ -73,13 +81,13 @@ A fine sessione il riepilogo offre **«Scarica il log»**: un file JSON indentat
 in italiano, che si apre e si legge senza strumenti. Si chiama
 `suona-la-nota-log-AAAA-MM-GG-HHMMSS.json` e contiene:
 
-- le **impostazioni in vigore** (range, durata, tempo per bersaglio, tetto, modalità, preset);
+- le **impostazioni in vigore** (intervallo, durata, tempo per bersaglio, tetto, modalità, preset);
 - i **bersagli** che la sessione ha chiesto, in ordine, col tasto, il nome, il verdetto, i millisecondi
   e i **colpi** sentiti mentre quel bersaglio era a schermo: altezza, frequenza, credibilità, livello,
   margini sul secondo classificato e sull'ottava, stabilità, istante;
-- il **soundcheck**: oggi `range_misurato: false` e `range_effettivo: null`, perché il soundcheck non
-  c'è ancora — il file dice che il range non è stato misurato invece di fingere che lo sia. Quando il
-  soundcheck arriverà, `range_effettivo` conterrà il range misurato;
+- il **soundcheck**: `intervallo_misurato: false` e `intervallo_effettivo: null` quando non è stato
+  fatto — il file dice che l'intervallo non è stato misurato invece di fingere che lo sia — e
+  `intervallo_misurato: true` con l'intersezione quando c'è;
 - la **fine** (tempo scaduto o lista esaurita) e il **punteggio**.
 
 Un colpo che il rilevatore non ha potuto giudicare è segnato `ambiguo: true` e non conta come errore.

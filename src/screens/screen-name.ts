@@ -9,4 +9,4 @@
  * `index.html`, a module beside the others and a row in the composition — and
  * never an edit to the wizard, which only knows how to show one of them.
  */
-export type ScreenName = 'setup' | 'exercise' | 'summary';
+export type ScreenName = 'avvio' | 'setup' | 'exercise' | 'summary';

@@ -48,12 +48,23 @@ _Avoid_: soglia, punteggio, volume
 
 **Portata udibile**:
 L'insieme delle note che quel dispositivo, in quella stanza, riesce davvero a sentire. Si misura,
-non si assume.
-_Avoid_: estensione, range
+non si assume. Non è l'estensione dello strumento: è quello che il dispositivo ne sente.
+_Avoid_: estensione, intervallo, range
+
+**Estensione**:
+L'intervallo fra il tasto più basso e il più alto che lo strumento ha. Il soundcheck lo misura
+facendo suonare i due estremi; quello che il dispositivo sente di quell'estensione è la **portata
+udibile**. È dello strumento, non del telefono.
+_Avoid_: compasso, intervallo, range, portata
+
+Il ticket e la specifica la chiamavano «compasso»: è il falso amico dell'inglese *compass*, e in
+italiano il compasso è quello da disegno — in musica, la battuta.
 
 **Soundcheck**:
-La prova di ascolto che misura la portata udibile e verifica che il segnale arrivi. È la prima
-cosa che l'applicazione propone, e senza di essa i bersagli restano limitati alla portata nota.
+La prova di ascolto che misura l'estensione dello strumento e la portata udibile, e verifica che il
+segnale arrivi. Si fa a richiesta dalla configurazione — `?soundcheck=1` la impone — e la misura
+resta sul telefono finché non si rifà; senza di essa i bersagli restano quelli dell'**Intervallo
+dell'esercizio**.
 _Avoid_: calibrazione, taratura, prova
 
 ### La sessione
@@ -73,10 +84,10 @@ L'intervallo fra una nota e la successiva con lo stesso nome. Fa parte della ris
 un'ottava sotto non è una risposta corretta.
 _Avoid_: registro, altezza
 
-**Range dell'esercizio**:
+**Intervallo dell'esercizio**:
 L'intervallo fra la nota minima e la massima che una sessione può chiedere. Limita sia la sequenza
 sia la ricerca del rilevatore: fuori da lì non esiste candidato.
-_Avoid_: estensione, portata
+_Avoid_: range, estensione, portata
 
 **Corretta**:
 Il verdetto di un bersaglio risolto da un colpo che contiene l'altezza esatta richiesta. Si chiamava

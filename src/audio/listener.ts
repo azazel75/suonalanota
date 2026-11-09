@@ -50,6 +50,14 @@ export const READ_DELAY_MS = 150;
 /** How often a page feeds a frame: 25 per second, throttled from rAF. */
 export const ANALYSIS_INTERVAL_MS = 40;
 
+/**
+ * Below this credibility a colpo is noise and does not enter. Four is the number
+ * the spike measured, not a preference (docs/adr/0004): the exercise and the
+ * soundcheck both judge with it, so that a note the soundcheck heard is a note
+ * the exercise will hear.
+ */
+export const MIN_CREDIBILITY = 4;
+
 /** Silence as a number, not as -Infinity. */
 export const DB_FLOOR = -100;
 

@@ -21,6 +21,7 @@ import {
   sequenceFor,
   sessionConfigOf,
   settingsFromQuery,
+  soundcheckRequired,
   type Settings,
 } from '../src/exercise/settings';
 import { ADVANCED_RANGE, BASE_RANGE, isInRange, keysInRange } from '../src/score/staff';
@@ -200,5 +201,16 @@ describe('the trial from the URL', () => {
     expect(settingsFromQuery(params('duration=30')).skipSetup).toBe(true);
     expect(settingsFromQuery(params('nonsense=1')).skipSetup).toBe(false);
     expect(settingsFromQuery(params('autostart=1')).skipSetup).toBe(false);
+  });
+
+  it('lets the soundcheck be required without skipping the trial it is asked from', () => {
+    // `?soundcheck=1` opens the configuration and, from there, the ascolto; it
+    // is not a trial parameter, and treating it as one would skip the very
+    // screen it lives on.
+    expect(settingsFromQuery(params('soundcheck=1')).skipSetup).toBe(false);
+    expect(settingsFromQuery(params('soundcheck=1&duration=30')).skipSetup).toBe(true);
+    expect(soundcheckRequired(params('soundcheck=1'))).toBe(true);
+    expect(soundcheckRequired(params('soundcheck=0'))).toBe(false);
+    expect(soundcheckRequired(params(''))).toBe(false);
   });
 });

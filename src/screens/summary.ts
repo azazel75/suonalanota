@@ -24,6 +24,7 @@
  * a place the allievə has to ask an adult about.
  */
 import type { Settings } from '../exercise/settings';
+import { effectiveRange, type Portata } from '../exercise/portata';
 import { summarise, type SummarySeries } from '../exercise/summary';
 import {
   NAME_MAX_LENGTH,
@@ -56,6 +57,8 @@ export interface SessionResult {
   readonly state: SessionState;
   /** The trial in force, kept for the log: the controls may have moved since. */
   readonly settings: Settings;
+  /** The portata in force when the session started: the log says whether it was measured. */
+  readonly portata: Portata | null;
   /** The clef each key was drawn in: the middle C can be written two ways. */
   readonly clefs: ReadonlyMap<number, Clef>;
   /** The bersagli the session asked, each with the colpi heard while it was on screen. */
@@ -234,10 +237,22 @@ export function createSummaryScreen(ports: SummaryPorts): SummaryScreen {
     skippedGroup.hidden = summary.skippedNotes.length === 0;
 
     const when = new Date();
+    // The log says both things: the trial the teacher chose, and the range the
+    // device proved it hears. An unmeasured session says `false`/`null`.
+    const effective = result.portata === null
+      ? null
+      : effectiveRange(result.settings.range, result.portata);
     downloadable = {
       name: logFileName(when),
       text: logJson(
-        sessionLog({ when, settings: result.settings, state: result.state, targets: result.targets }),
+        sessionLog({
+          when,
+          settings: result.settings,
+          state: result.state,
+          targets: result.targets,
+          rangeMeasured: result.portata !== null,
+          rangeEffective: effective ?? undefined,
+        }),
       ),
     };
     logGroup.hidden = false;

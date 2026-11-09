@@ -126,6 +126,13 @@
       select:disabled, input:disabled { opacity: 0.5; }
       .hint { color: var(--warn); font-size: 14px; margin: 12px 0 0; }
 
+      /* The soundcheck asks one note at a time: the instruction is the biggest thing on the card. */
+      .probe { font-size: 19px; font-weight: 600; margin: 6px 0 4px; min-height: 52px; }
+      /* The ascolto lives under the range, folded away: it is for whoever wants it. */
+      #ascolto { margin: 2px 0 12px; }
+      #ascolto p { margin: 6px 0 10px; }
+      #ascolto button { margin-top: 0; }
+
       /* The teacher's list: one keyboard per octave, so that at 390 px a finger still hits a key. */
       #list-field { margin-top: 12px; }
       .keyboard { display: grid; gap: 6px; margin: 4px 0 10px; }
@@ -209,11 +216,24 @@
         <p class="lead">Leggi la nota sul rigo, poi suonala sul pianoforte.</p>
       </header>
 
+      <section class="card" id="avvio" hidden>
+        <!-- The five notes of the soundcheck: one instruction at a time. -->
+        <h2>L'ascolto</h2>
+        <p id="avvio-lead" class="lead"></p>
+        <p id="avvio-step" class="probe"></p>
+        <p id="avvio-status" class="status" role="status"></p>
+        <p id="avvio-message" class="message" role="status" hidden></p>
+        <button id="avvio-start" type="button">Accendi il microfono</button>
+        <button id="avvio-use" type="button" hidden>Usa questa portata</button>
+        <button id="avvio-retry" type="button" class="ghost" hidden>Rifai la misura</button>
+        <button id="avvio-skip" type="button" class="ghost">Salta</button>
+      </section>
+
       <section class="card" id="setup">
         <h2>La prova</h2>
 
         <fieldset>
-          <legend>Range</legend>
+          <legend>Intervallo</legend>
           <label class="choice"><input type="radio" name="range" value="base" checked /> base · Do3–Do5</label>
           <label class="choice"><input type="radio" name="range" value="advanced" /> avanzato · Si1–Re6</label>
           <div class="pair">
@@ -221,6 +241,12 @@
             <label>Al <select id="highest" aria-label="nota più alta"></select></label>
           </div>
         </fieldset>
+
+        <details id="ascolto">
+          <summary>Ascolto</summary>
+          <p id="portata-state">Portata del telefono: non misurata.</p>
+          <button id="measure" type="button" class="ghost">Misura l'ascolto</button>
+        </details>
 
         <fieldset>
           <legend>Orologi</legend>

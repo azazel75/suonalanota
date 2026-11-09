@@ -28,14 +28,15 @@ import {
   clampRange,
   isSequenceMode,
   normalise,
-  problemWith,
   type SequenceMode,
   type Settings,
 } from '../exercise/settings';
+import { type Portata } from '../exercise/portata';
 import { layoutRow, octaveRows } from '../score/keyboard';
 import { ADVANCED_RANGE, BASE_RANGE, type KeyRange } from '../score/staff';
 import { browserStorage, element, saveFile } from '../ui/dom';
 import { count } from '../ui/text';
+import { describePortata, trialProblem } from './portata-text';
 import { describeList } from './setup-text';
 
 /** What the page asks of this screen, and nothing more. */
@@ -56,6 +57,10 @@ export interface SetupPorts {
   readonly changed: (problem: string | null) => void;
   /** "Comincia" was pressed. */
   readonly begin: () => void;
+  /** The portata the phone remembers, or `null` when nothing was measured. */
+  readonly portata: () => Portata | null;
+  /** «Misura l'ascolto» was pressed: the page opens the soundcheck screen. */
+  readonly measure: () => void;
 }
 
 /** The name of the file a teacher keeps and hands to another phone. */
@@ -81,6 +86,8 @@ export function createSetupScreen(ports: SetupPorts): SetupScreen {
   const listExport = element<HTMLButtonElement>('list-export');
   const listImport = element<HTMLButtonElement>('list-import');
   const listFile = element<HTMLInputElement>('list-file');
+  const portataState = element<HTMLParagraphElement>('portata-state');
+  const measureButton = element<HTMLButtonElement>('measure');
 
   /**
    * The list the teacher composes, in the order she ticked it: read back at
@@ -264,7 +271,12 @@ export function createSetupScreen(ports: SetupPorts): SetupScreen {
     timeoutInput.value = String(settings.targetTimeoutMs / 1000);
     if (settings.wrongLimit !== null) limitInput.value = String(settings.wrongLimit);
 
-    const problem = problemWith(settings);
+    // Two ways a trial cannot start: nothing to ask, or nothing left to ask
+    // after the measurement narrowed the range. The second one is said beside
+    // the range, not discovered by a session that opens the microphone on silence.
+    const portata = ports.portata();
+    const problem = trialProblem(settings, portata);
+    portataState.textContent = describePortata(portata);
     settingsHint.textContent = problem ?? '';
     settingsHint.hidden = problem === null;
     beginButton.disabled = problem !== null;
@@ -309,6 +321,10 @@ export function createSetupScreen(ports: SetupPorts): SetupScreen {
   fillPresetOptions();
 
   beginButton.addEventListener('click', ports.begin);
+
+  measureButton.addEventListener('click', () => {
+    if (!ports.busy()) ports.measure();
+  });
 
   capInput.addEventListener('change', () => {
     limitInput.disabled = !capInput.checked;

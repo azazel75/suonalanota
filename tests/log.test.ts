@@ -110,7 +110,7 @@ describe('the log of a session', () => {
       'bersagli',
     ]);
     expect(Object.keys(parsed.impostazioni)).toEqual([
-      'range',
+      'intervallo',
       'durata_secondi',
       'tempo_per_bersaglio_secondi',
       'tetto_colpi',
@@ -149,7 +149,7 @@ describe('the log of a session', () => {
     const { parsed } = written(exercise, settings);
 
     expect(parsed.impostazioni).toEqual({
-      range: { minimo: 35, massimo: 86 },
+      intervallo: { minimo: 35, massimo: 86 },
       durata_secondi: 90,
       tempo_per_bersaglio_secondi: 6,
       tetto_colpi: 3,
@@ -178,14 +178,16 @@ describe('the log of a session', () => {
 
     const { parsed } = written(exercise);
 
-    expect(parsed.soundcheck.range_misurato).toBe(false);
-    expect(parsed.soundcheck.range_effettivo).toBeNull();
+    expect(parsed.soundcheck.intervallo_misurato).toBe(false);
+    expect(parsed.soundcheck.intervallo_effettivo).toBeNull();
     expect(parsed.soundcheck.nota).toMatch(/soundcheck/i);
+    expect(parsed.soundcheck.nota).toMatch(/non è stato fatto/i);
+    expect(parsed.soundcheck.nota).not.toMatch(/non esiste ancora/i);
     // What is logged is the range the trial asked for, not a measured one.
-    expect(parsed.impostazioni.range).toEqual({ minimo: 48, massimo: 72 });
+    expect(parsed.impostazioni.intervallo).toEqual({ minimo: 48, massimo: 72 });
   });
 
-  it('has a place for the range a soundcheck measured, empty until there is one', () => {
+  it('has a place for the range a soundcheck measured, and fills it when there is one', () => {
     const exercise = session([60]);
     exercise.feed({ at: 40, levelDb: -20, colpi: [colpo(60)] });
 
@@ -198,8 +200,8 @@ describe('the log of a session', () => {
       rangeEffective: { lowest: 50, highest: 70 },
     });
 
-    expect(measured.soundcheck.range_misurato).toBe(true);
-    expect(measured.soundcheck.range_effettivo).toEqual({ minimo: 50, massimo: 70 });
+    expect(measured.soundcheck.intervallo_misurato).toBe(true);
+    expect(measured.soundcheck.intervallo_effettivo).toEqual({ minimo: 50, massimo: 70 });
     expect(measured.soundcheck.nota).not.toMatch(/non è ancora stato fatto/i);
   });
 

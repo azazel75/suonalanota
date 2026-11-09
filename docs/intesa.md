@@ -27,13 +27,13 @@ l'esercizio, niente backend, niente dati che escono dal dispositivo.
 |--------------------|----------------------------------------------------------------------------|
 | durata sessione    | 60 s, configurabile; la pausa non conta                                    |
 | per bersaglio      | 8 s; colpi liberi fino allo scadere; tetto ai colpi configurabile e spento |
-| range base         | Do3–Do5 (48–72)                                                            |
-| range avanzato     | Si1–Re6 (35–86)                                                            |
+| intervallo base     | Do3–Do5 (48–72)                                                            |
+| intervallo avanzato | Si1–Re6 (35–86)                                                            |
 | chiavi             | entrambe nella stessa sessione, di default                                 |
 | chiave di una nota | quella che la lascia più vicina al rigo; il Do centrale alterna            |
 | tagli addizionali  | si disegnano, senza avvisi                                                 |
 | sequenza           | casuale senza ripetizioni, preset, lista della maestra (editor + JSON)     |
-| schermate          | avvio con soundcheck, scelta, esercizio, riepilogo                         |
+| schermate          | configurazione (la prima), ascolto a richiesta, esercizio, riepilogo       |
 | classifica         | locale, nickname facoltativo                                               |
 | distribuzione      | PWA installabile, funzionante offline, cartella statica                    |
 
@@ -44,15 +44,15 @@ Solo microfono: il pianoforte acustico e iPad escludono il MIDI, e il caso d'uso
 - due finestre: **2048 campioni** per l'attacco, **16384** (341 ms) per l'altezza;
 - l'attacco è un **isteresi** (un colpo per salita), non un cooldown;
 - l'altezza si legge **150 ms dopo** l'attacco, quando la finestra lunga si è riempita;
-- la ricerca è limitata al **range dell'esercizio**, mai tutti gli 88 tasti;
+- la ricerca è limitata all'**intervallo dell'esercizio**, mai tutti gli 88 tasti;
 - un colpo entra solo se la nota vince **≥ 4 volte** sulla mediana dei candidati (credibilità: numero
   puro, non dipende dal volume del telefono);
 - l'ottava si decide con le **parziali dispari** dell'ottava sotto: una corda premuta le ha, una che
   risuona no (0,32–0,60 contro ≤ 0,21, misurato);
 - se l'evidenza cade nella banda **0,2–0,4** — o non è calcolabile — il colpo è ambiguo: non si
   giudica, si chiede di ripetere;
-- il **soundcheck** misura il compasso e la portata udibile del dispositivo, e può solo restringere i
-  range.
+- il **soundcheck** misura l'estensione dello strumento e la portata udibile del dispositivo, e può
+  solo restringere l'intervallo.
 
 ## Cosa sappiamo, misurato
 
@@ -65,7 +65,7 @@ Su un mezza coda Yamaha, coperchio chiuso, telefono Android di fascia media, mic
 | Do3–Do5 (base) | 84% severo, **92%** contando a parte i colpi ambigui |
 | Do#5–Re6       | 85-100%                                              |
 
-Nessuna nota inventata fuori dal range; colpi duplicati scesi dal 11% all'1-3%; frequenza misurata
+Nessuna nota inventata fuori dall'intervallo; colpi duplicati scesi dal 11% all'1-3%; frequenza misurata
 registrata per ogni colpo, così un errore del rilevatore si distingue da un errore dell'allievə.
 
 ## Cosa non sappiamo

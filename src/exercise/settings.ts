@@ -225,7 +225,13 @@ export function problemWith(settings: Settings): string | null {
   return NOTHING_TO_ASK[settings.mode];
 }
 
-/** The parameters a URL may use to dictate the trial, all optional. */
+/**
+ * The parameters a URL may use to dictate the trial, all optional.
+ *
+ * `soundcheck` is deliberately **not** one of them: it does not describe a
+ * trial, it asks for a step before one, and counting it here would skip the
+ * configuration screen the step is reached from.
+ */
 const CONFIGURATION_PARAMETERS = [
   'range',
   'lowest',
@@ -247,10 +253,21 @@ export interface TrialFromUrl {
   readonly settings: Settings;
   /**
    * True when the URL chose the trial, so the configuration screen is skipped.
-   * It says nothing about the soundcheck: when ticket 09 adds that step, the
-   * step itself will decide whether the URL skipped it.
+   * It says nothing about the soundcheck: `?soundcheck=1` asks for it anyway,
+   * and the step decides where the page goes when it is done.
    */
   readonly skipSetup: boolean;
+}
+
+/**
+ * Whether the URL insists on the soundcheck before the trial: `?soundcheck=1`.
+ *
+ * A link prepared for a class can use it to make sure every phone is measured
+ * before it starts; without it the step is offered in the configuration and
+ * nobody is made to walk through it.
+ */
+export function soundcheckRequired(params: URLSearchParams): boolean {
+  return params.get('soundcheck') === '1';
 }
 
 /** A number from the URL, or null when the parameter is absent or not a number. */

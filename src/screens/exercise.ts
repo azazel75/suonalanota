@@ -21,24 +21,20 @@
  *  - the settings are read once, when the session starts: they do not change
  *    while it runs, because the score would stop meaning anything.
  */
-import { createListener } from '../audio/listener';
+import { createListener, MIN_CREDIBILITY } from '../audio/listener';
 import { openAudioInput, type AudioInput } from '../audio/microphone';
 import { createExercise, type Exercise } from '../exercise/controller';
-import { problemWith, sequenceFor, sessionConfigOf, type Settings } from '../exercise/settings';
+import { effectiveRange, type Portata } from '../exercise/portata';
+import { sequenceFor, sessionConfigOf, type Settings } from '../exercise/settings';
 import { drawTarget } from '../score/sheet';
 import { keysInRange, nearestPlacement } from '../score/staff';
 import type { EndReason, SessionState, Verdict } from '../session/engine';
 import { element } from '../ui/dom';
 import { count } from '../ui/text';
+import { trialProblem } from './portata-text';
 import type { ScreenName } from './screen-name';
 import type { SummaryScreen } from './summary';
 import type { Wizard } from './wizard';
-
-/**
- * Below this credibility a colpo is noise and does not enter the exercise.
- * Four is the number the spike measured, not a preference (docs/adr/0004).
- */
-const MIN_CREDIBILITY = 4;
 
 /** How long after the beep the microphone's frames are not believed. */
 const BEEP_MUTE_MS = 300;
@@ -68,6 +64,8 @@ export interface ExercisePorts {
   /** Puts the setup controls back in agreement with the trial in force; answers with the problem, if any. */
   readonly refreshSetup: () => string | null;
   readonly summary: SummaryScreen;
+  /** The portata the phone measured: the session can only ask what the device hears. */
+  readonly portata: () => Portata | null;
 }
 
 interface Running {
@@ -75,6 +73,8 @@ interface Running {
   exercise: Exercise;
   /** The trial in force, kept for the log: the controls may have moved since. */
   settings: Settings;
+  /** The measurement in force when the session started, kept for the log. */
+  portata: Portata | null;
   /** Until this instant the colpi the microphone hears are the beep coming back. */
   muteUntil: number;
 }
@@ -99,7 +99,8 @@ export function createExerciseScreen(ports: ExercisePorts): ExerciseScreen {
   /** Something on the paper before the allievə presses anything, on the chosen range. */
   function drawPreview(): void {
     if (busy()) return;
-    const keys = keysInRange(ports.settings().range);
+    const range = effectiveRange(ports.settings().range, ports.portata()) ?? ports.settings().range;
+    const keys = keysInRange(range);
     drawTarget(sheet, nearestPlacement(keys[Math.floor(Math.random() * keys.length)]));
   }
 
@@ -149,6 +150,7 @@ export function createExerciseScreen(ports: ExercisePorts): ExerciseScreen {
       reason,
       state,
       settings: current.settings,
+      portata: current.portata,
       clefs: current.exercise.placements(),
       targets: current.exercise.log(),
     });
@@ -186,10 +188,16 @@ export function createExerciseScreen(ports: ExercisePorts): ExerciseScreen {
   async function start(): Promise<void> {
     if (busy()) return;
     const settings = ports.settings();
-    if (problemWith(settings) !== null) {
+    const measured = ports.portata();
+    // The trial as the phone can play it: an empty intersection, or a list whose
+    // keys all fell outside it, is said in the configuration instead of starting
+    // a session with nothing to ask.
+    if (trialProblem(settings, measured) !== null) {
       ports.refreshSetup();
       return;
     }
+    const effective = effectiveRange(settings.range, measured) ?? settings.range;
+    const trial: Settings = { ...settings, range: effective };
 
     // From here to the open microphone nothing is to be touched: the way back
     // goes away at once, so no change can land on a trial already being built.
@@ -199,8 +207,8 @@ export function createExerciseScreen(ports: ExercisePorts): ExerciseScreen {
     showMessage(null);
 
     const listener = createListener({
-      lowMidi: settings.range.lowest,
-      highMidi: settings.range.highest,
+      lowMidi: trial.range.lowest,
+      highMidi: trial.range.highest,
       minCredibility: MIN_CREDIBILITY,
     });
 
@@ -233,7 +241,7 @@ export function createExerciseScreen(ports: ExercisePorts): ExerciseScreen {
     // The sequence is drawn once, at the start: the range cannot be exhausted
     // and refilled behind the allievə's back.
     const exercise = createExercise({
-      keys: sequenceFor(settings),
+      keys: sequenceFor(trial),
       config: sessionConfigOf(settings),
       ports: {
         draw: (placement) => drawTarget(sheet, placement),
@@ -250,7 +258,7 @@ export function createExerciseScreen(ports: ExercisePorts): ExerciseScreen {
       },
     });
 
-    running = { audio, exercise, settings, muteUntil: 0 };
+    running = { audio, exercise, settings, portata: measured, muteUntil: 0 };
     starting = false;
 
     // Nothing to touch while the trial runs, and the staff gets the screen.
