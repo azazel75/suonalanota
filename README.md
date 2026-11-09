@@ -25,7 +25,9 @@ dell'ultima visita; quando l'app shell cambia, l'app lo dice con una barra e si
 aggiorna al tocco, mai a metà esercizio (ADR 0020). Il **soundcheck** — cinque
 note per misurare che cosa il telefono sente
 davvero — si fa a richiesta dalla configurazione, e la misura resta sul telefono
-finché non si rifà: chi apre l'applicazione per suonare non ci passa davanti.
+finché non si rifà: chi apre l'applicazione per suonare non ci passa davanti. Il
+tema è quello del telefono: chiara o scura come lo è già lo schermo, senza
+interruttori (ADR 0021).
 
 ## Come si avvia
 
@@ -250,6 +252,8 @@ stanza silenziosa, latenza attacco → verdetto < 400 ms. Il registro grave
   il font segue lo spazio.
 - [0020](docs/adr/0020-l-app-shell-si-aggiorna.md) — l'app shell si aggiorna
   quando l'utente dice sì.
+- [0021](docs/adr/0021-il-tema-del-sistema.md) — il tema è quello del sistema:
+  chiaro o scuro come lo è già il telefono.
 
 ## Cosa non è ancora verificato
 

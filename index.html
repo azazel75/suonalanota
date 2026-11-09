@@ -3,8 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="color-scheme" content="dark" />
-    <meta name="theme-color" content="#0b0f14" />
+    <meta name="color-scheme" content="dark light" />
+    <!-- Two bars, one per system theme: the status bar follows the reader's setting. -->
+    <meta name="theme-color" content="#0b0f14" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f4f2ec" media="(prefers-color-scheme: light)" />
     <link rel="manifest" href="/manifest.json" />
     <!-- iOS reads the manifest late and the touch icon not at all: two lines for the home screen. -->
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
@@ -12,17 +14,53 @@
     <title>Suona la nota</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <style>
+      /* The theme is the system's, and there is nothing to configure: a phone
+         that is light at noon and dark at night has already been set. The dark
+         palette is the default; `prefers-color-scheme: light` swaps the same
+         values, and everything below reads them, so the whole page follows.
+         No JavaScript and nothing to load: the first paint is already right. */
       :root {
+        color-scheme: dark light;
         --bg: #0b0f14;
         --card: #131a22;
         --line: #223040;
         --text: #e8eef5;
         --dim: #8fa3b8;
         --accent: #6cb6ff;
+        --accent-soft: rgba(108, 182, 255, 0.16);
+        --on-accent: #06121f;
+        --field: #0e151d;
+        --shadow: rgba(0, 0, 0, 0.45);
         --paper: #fbf8f1;
         --good: #2f9e44;
         --bad: #c92a2a;
         --warn: #ffd166;
+        /* The keyboard is an instrument, not a surface: its keys are black and
+           white in every room, and their labels must not follow --text. */
+        --key-white: #fbf8f1;
+        --key-black: #10161d;
+        --key-line: #c9c2b4;
+        --on-key-white: #06121f;
+        --on-key-black: #e8eef5;
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #f4f2ec;
+          --card: #ffffff;
+          --line: #d8d2c4;
+          --text: #1a1a18;
+          --dim: #5c5750;
+          --accent: #1f6feb;
+          --accent-soft: rgba(31, 111, 235, 0.12);
+          --on-accent: #ffffff;
+          --field: #fbf9f4;
+          --shadow: rgba(0, 0, 0, 0.18);
+          --paper: #fffdf8;
+          --good: #2b7a3d;
+          --bad: #b3261e;
+          /* The night yellow is unreadable on white: the warning is amber here. */
+          --warn: #8a5a00;
+        }
       }
       *,
       *::before,
@@ -139,7 +177,7 @@
         background: var(--card);
         border: 1px solid var(--line);
         border-radius: 12px;
-        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+        box-shadow: 0 12px 30px var(--shadow);
         z-index: 5;
       }
       button, .key, .choice label { touch-action: manipulation; }
@@ -154,6 +192,11 @@
       /* The staff is paper: black ink on a light sheet reads in sunlight too. */
       .sheet { background: var(--paper); border-radius: 12px; padding: 10px 6px; }
       .sheet svg { display: block; width: 100%; height: auto; }
+      /* On a light page the sheet would be white on white: a hairline is what
+         makes it a sheet. Against the dark theme the paper already stands out. */
+      @media (prefers-color-scheme: light) {
+        .sheet { outline: 1px solid var(--line); }
+      }
       .sheet.bad { padding: 24px 16px; color: #7a1d1d; font-size: 14px; }
       /* The verdict is a flash of the whole sheet: a border and a halo, gone in a third of a second. */
       .sheet.flash-good { box-shadow: inset 0 0 0 5px var(--good), 0 0 26px rgba(47, 158, 68, 0.55); }
@@ -188,9 +231,9 @@
         padding: 8px 10px;
         margin: 0 0 6px;
         border-radius: 10px;
-        background: #0e151d;
+        background: var(--field);
       }
-      .board li.me { background: rgba(108, 182, 255, 0.16); box-shadow: inset 0 0 0 1px var(--accent); }
+      .board li.me { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
       .board .place { color: var(--dim); min-width: 30px; font-variant-numeric: tabular-nums; }
       .board .who { font-weight: 600; overflow-wrap: anywhere; }
       .board .what { margin-left: auto; color: var(--dim); font-size: 14px; text-align: right; }
@@ -204,7 +247,7 @@
         border: 0;
         border-radius: 12px;
         background: var(--accent);
-        color: #06121f;
+        color: var(--on-accent);
         font: inherit;
         font-weight: 600;
         font-size: 17px;
@@ -225,7 +268,7 @@
       select, input[type="number"], input[type="text"] {
         font: inherit;
         color: var(--text);
-        background: #0e151d;
+        background: var(--field);
         border: 1px solid var(--line);
         border-radius: 10px;
         padding: 10px 12px;
@@ -247,10 +290,10 @@
       .octave { position: relative; display: flex; height: 92px; }
       .key {
         padding: 0 0 6px;
-        border: 1px solid #c9c2b4;
+        border: 1px solid var(--key-line);
         border-radius: 8px;
-        background: var(--paper);
-        color: #06121f;
+        background: var(--key-white);
+        color: var(--on-key-white);
         font: inherit;
         font-size: 11px;
         font-weight: 600;
@@ -263,16 +306,16 @@
       }
       .key.white, .key.lone { flex: 0 0 auto; min-width: 0; min-height: 44px; }
       /* A range that begins on a black key: one dark key, no white one under it. */
-      .key.lone { background: #10161d; border-color: #000; color: var(--text); }
+      .key.lone { background: var(--key-black); border-color: #000; color: var(--on-key-black); }
       .key.black {
         position: absolute;
         top: 0;
         height: 56%;
         min-height: 44px;
         z-index: 2;
-        background: #10161d;
+        background: var(--key-black);
         border-color: #000;
-        color: var(--text);
+        color: var(--on-key-black);
       }
       /* A black key is a third narrower than a white one, and a finger is not:
          the hit area reaches past the painted key without touching its neighbour. */
@@ -284,14 +327,14 @@
         left: -6px;
         right: -6px;
       }
-      .key.ticked { background: var(--accent); border-color: var(--accent); color: #06121f; }
+      .key.ticked { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
       /* The order the teacher ticked the keys in: a number, because the sequence is the point. */
       .key .order {
         min-width: 18px;
         padding: 0 4px;
         border-radius: 9px;
-        background: #06121f;
-        color: var(--accent);
+        background: var(--on-key-white);
+        color: var(--key-white);
         font-size: 11px;
         line-height: 18px;
       }
