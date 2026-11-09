@@ -17,6 +17,9 @@
 import type { OutputBundle } from 'rolldown';
 import { defineConfig, type Plugin } from 'vitest/config';
 
+// The version the page shows under the bug: one number, from package.json.
+import packageJson from './package.json';
+
 import {
   MANIFEST_LIGHT_PATH,
   MANIFEST_PATH,
@@ -68,6 +71,11 @@ function pwa(): Plugin {
 
 export default defineConfig({
   plugins: [pwa()],
+  // Injected into the bundle as a literal: the application knows which build it
+  // is without carrying a copy of the number.
+  define: {
+    __APP_VERSION__: JSON.stringify(packageJson.version),
+  },
   build: {
     target: 'es2022',
     rollupOptions: {

@@ -22,6 +22,7 @@
 import { loadPortata, savePortata, type Portata } from './exercise/portata';
 import { settingsFromQuery, soundcheckRequired } from './exercise/settings';
 import { applyManifestTheme } from './pwa/manifest-theme';
+import { aboutText } from './version';
 import { registerServiceWorker, applyUpdate } from './pwa/register';
 import { createExerciseScreen } from './screens/exercise';
 import { createSetupScreen, type SetupScreen } from './screens/setup';
@@ -102,6 +103,11 @@ async function main(): Promise<void> {
   // with a fake microphone start the exercise without a click. With a required
   // soundcheck the gesture that opens the microphone is the step's own button.
   if (autostart && !required) void exercise.start();
+
+  // Which build this is: the version, the licence and the way to the sources,
+  // under the bug — nowhere a child has to read it.
+  const about = document.getElementById('about-version');
+  if (about !== null) about.textContent = aboutText();
 
   // The splash screen of the installed application follows the system, as the
   // page does: the manifest is chosen here, before anyone can install it.

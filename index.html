@@ -355,6 +355,8 @@
 
       details { color: var(--dim); font-size: 14px; }
       summary { cursor: pointer; padding: 6px 2px; }
+      /* Under the bug: which build this is and where the code lives. */
+      .about { margin: 8px 0 0; color: var(--dim); font-size: 13px; }
       /* The measurement spikes: reachable, not advertised. One bug, in the corner. */
       .tools { margin: 0; opacity: 0.35; font-size: 13px; }
       .tools summary { display: inline-flex; padding: 2px; list-style: none; }
@@ -531,6 +533,10 @@
           <li><a href="/spike/dispari.html">Sonda 1 · parziali dispari</a> — se l'ottava sotto è stata suonata o risuona.</li>
           <li><a href="/spike/salita.html">Sonda 2 · salita delle bande</a> — se la banda dell'ottava sotto sale dopo quella della nota letta.</li>
         </ul>
+        <p class="about">
+          <span id="about-version"></span> ·
+          <a href="https://github.com/azazel75/suonalanota">sorgenti</a>
+        </p>
       </details>
     </footer>
     <script type="module" src="/src/main.ts"></script>
