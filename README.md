@@ -20,10 +20,10 @@ nella classifica della prova, e la posizione anche quando è sotto le prime
 cinque. La lista dell'insegnante si compone toccando i tasti di una tastiera, si
 esporta e si importa come file JSON, e resta sul telefono fra una lezione e
 l'altra. L'applicazione si installa e funziona senza rete: manifest e service
-worker escono dal build, e il guscio che si apre in classe è quello dell'ultima
-visita; quando il guscio cambia, l'app lo dice con una barra e si aggiorna al
-tocco, mai a metà esercizio (ADR 0020). Il **soundcheck** — cinque note per
-misurare che cosa il telefono sente
+worker escono dal build, e l'app shell che si apre in classe è quella
+dell'ultima visita; quando l'app shell cambia, l'app lo dice con una barra e si
+aggiorna al tocco, mai a metà esercizio (ADR 0020). Il **soundcheck** — cinque
+note per misurare che cosa il telefono sente
 davvero — si fa a richiesta dalla configurazione, e la misura resta sul telefono
 finché non si rifà: chi apre l'applicazione per suonare non ci passa davanti.
 
@@ -240,16 +240,16 @@ stanza silenziosa, latenza attacco → verdetto < 400 ms. Il registro grave
   chiama «corretta».
 - [0015](docs/adr/0015-la-classifica-locale.md) — la classifica del telefono,
   una riga per ragazzə.
-- [0016](docs/adr/0016-il-guscio-offline.md) — manifest e service worker emessi
-  dal build.
+- [0016](docs/adr/0016-l-app-shell-offline.md) — manifest e service worker
+  emessi dal build.
 - [0017](docs/adr/0017-il-soundcheck.md) — il soundcheck: un passo a richiesta,
   non un cancello.
 - [0018](docs/adr/0018-le-parole-dell-esercizio.md) — le parole dell'esercizio:
   la nota, la pressione, il tentativo.
 - [0019](docs/adr/0019-le-proporzioni-del-rigo.md) — le proporzioni del rigo:
   il font segue lo spazio.
-- [0020](docs/adr/0020-il-guscio-si-aggiorna.md) — il guscio si aggiorna quando
-  l'utente dice sì.
+- [0020](docs/adr/0020-l-app-shell-si-aggiorna.md) — l'app shell si aggiorna
+  quando l'utente dice sì.
 
 ## Cosa non è ancora verificato
 

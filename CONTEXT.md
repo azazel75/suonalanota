@@ -132,6 +132,15 @@ _Avoid_: bambino, utente, studente
 Chi prepara gli esercizi e legge i punteggi. In famiglia è anche chi apre l'applicazione.
 _Avoid_: maestra, docente, admin
 
+### Il programma
+
+**App shell**:
+I file che il service worker mette in cache perché l'applicazione parta senza rete — `index.html`,
+i chunk, il manifest — e che il build sa versionare. È il termine del mondo PWA, e il codice lo dice
+già così (`appShell`, `shell.ts`); in informatica «shell» da sola è l'interprete dei comandi, quindi
+qui si dice sempre **app shell**.
+_Avoid_: guscio, involucro, cornice
+
 ### La lingua
 
 Le parole per le persone si scrivono con la **schwa**, che non è né maschile né femminile: *allievə*,
@@ -144,3 +153,6 @@ Le parole dell'esercizio sono quelle di chi insegna — **nota**, **pressione**,
 predefinita** — e non quelle del tiro a segno: «bersaglio» e «colpo» restano fuori (ADR 0018). Anche
 «ascolto» resta fuori: l'atto di ascoltare non dice cosa si misura, e la misura si chiama **Sensibilità
 del dispositivo**.
+
+Gli ADR **0016** e **0020** sono stati rititolati con «app shell»: quella parola era nostra e non del
+prodotto, e in italiano non dice niente. Tutti gli altri ADR restano come sono stati scritti.

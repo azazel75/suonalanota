@@ -34,7 +34,7 @@ Single-context repo (questo):
 └── src/
     ├── audio/      il rilevatore, il microfono, le note
     ├── exercise/   la prova, i suoi numeri, la lista dell'insegnante
-    ├── pwa/        il guscio: manifest, service worker, registrazione
+    ├── pwa/        l'app shell: manifest, service worker, registrazione
     ├── score/      il rigo e la tastiera, disegnati
     ├── screens/    una schermata, un modulo (avvio, setup, exercise, summary, wizard)
     ├── session/    la macchina a stati e il log

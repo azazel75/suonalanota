@@ -265,7 +265,7 @@ describe('the service worker the build writes', () => {
       'the bundle'
     );
     expect(answer(worker, request('/assets/spike-ghi.js'))).toBeNull();
-    expect(answer(worker, request('/qualcosa-che-non-e-nel-guscio.json'))).toBeNull();
+    expect(answer(worker, request('/non-versionato.json'))).toBeNull();
   });
 
   it('falls back to the network when the cache has nothing to answer with', async () => {
