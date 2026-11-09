@@ -4,7 +4,7 @@
  * :Author:   Alberto Berti <alberto@metapensiero.it>
  * :License:  GNU General Public License version 3 or later
  *
- * The microphone side of the application: a stream of samples in, colpi out.
+ * The microphone side of the application: a stream of samples in, pressioni out.
  * No DOM, no AudioContext, no getUserMedia — the caller owns the analyser and
  * hands over one buffer per frame, because that is the only thing the spike
  * pages and the exercise have in common.
@@ -15,7 +15,7 @@
  *  - `measureFrame` reads one buffer: the level, the short spectrum the attack
  *    is heard on, and — when asked — the long spectrum and the key it names;
  *  - `createListener` keeps the state a session needs: when an attack happened,
- *    when to read the pitch of that attack, whether the colpo is credible enough
+ *    when to read the pitch of that attack, whether the pressione is credible enough
  *    to enter, and how long the winner has been the same key.
  *
  * Nothing here is tuned. The FFT size, the onset window, the read delay and the
@@ -51,7 +51,7 @@ export const READ_DELAY_MS = 150;
 export const ANALYSIS_INTERVAL_MS = 40;
 
 /**
- * Below this credibility a colpo is noise and does not enter. Four is the number
+ * Below this credibility a pressione is noise and does not enter. Four is the number
  * the spike measured, not a preference (docs/adr/0004): the exercise and the
  * soundcheck both judge with it, so that a note the soundcheck heard is a note
  * the exercise will hear.
@@ -76,7 +76,7 @@ export interface NoteRange {
  * spike writes it to its log and the app draws the candidates; both would
  * otherwise have to ask the microphone twice for the same frame.
  */
-export interface Colpo {
+export interface Pressione {
   /** When the attack was heard, on the clock of `push`. */
   at: number;
   /** The key the detector named, as a MIDI number. */
@@ -87,7 +87,7 @@ export interface Colpo {
   ambiguous: boolean;
   /** How far the winner stands out from the median candidate: below the gate it is noise. */
   credibility: number;
-  /** Level of the frame the colpo was read on, in dBFS. */
+  /** Level of the frame the pressione was read on, in dBFS. */
   levelDb: number;
   /** How many frames the winner had already been the same key, at read time. */
   stability: number;
@@ -102,7 +102,7 @@ export interface MeasurementOptions {
   highMidi?: number;
   /** Read the pitch on this frame. The attack spectrum is always read. */
   withPitch?: boolean;
-  /** When false the octave rule is skipped, and a colpo is judged as it lands. */
+  /** When false the octave rule is skipped, and a pressione is judged as it lands. */
   octaveEvidence?: boolean;
 }
 
@@ -159,7 +159,7 @@ export function measureFrame(
 export interface ListenerOptions {
   lowMidi?: number;
   highMidi?: number;
-  /** Below this credibility a colpo is noise and does not enter. */
+  /** Below this credibility a pressione is noise and does not enter. */
   minCredibility?: number;
   /** How long the pitch waits after an attack. */
   readDelayMs?: number;
@@ -183,37 +183,37 @@ export interface ListenerFrame {
   threshold: number;
   /** True when the detector may fire again: it has heard the sound fall back. */
   armed: boolean;
-  /** True when a colpo was waiting for the note to settle while this frame passed. */
+  /** True when a pressione was waiting for the note to settle while this frame passed. */
   reading: boolean;
   /** How many frames in a row the winner has been the same key, this frame included. */
   stability: number;
-  /** The colpi this frame completed: none, or one. */
-  colpi: Colpo[];
+  /** The pressioni this frame completed: none, or one. */
+  pressioni: Pressione[];
 }
 
 export interface Listener {
   readonly range: NoteRange;
   readonly minCredibility: number;
-  /** True while a colpo waits for the note to settle. */
+  /** True while a pressione waits for the note to settle. */
   readonly pending: boolean;
   /** Change the exercise range. Onset and stability start over: the old ones were about other keys. */
   setRange(low: number, high: number): void;
   setMinCredibility(value: number): void;
   /** Forget the sound heard so far — every attack after this one is the first. */
   resetOnset(): void;
-  /** Drop a colpo that was waiting: nothing of the old sound may be judged. */
+  /** Drop a pressione that was waiting: nothing of the old sound may be judged. */
   clearPending(): void;
   /**
    * Feed one buffer of `samples.length` samples, taken at `nowMs` on the caller's
-   * clock. Returns what the frame produced, including any colpo it completed.
+   * clock. Returns what the frame produced, including any pressione it completed.
    */
   push(samples: Float32Array | Float64Array, sampleRate: number, nowMs: number): ListenerFrame;
   /**
-   * Package what is in front of the microphone right now as a colpo, whatever
+   * Package what is in front of the microphone right now as a pressione, whatever
    * its credibility: this is the measure button of the spike, a deliberate act,
-   * not a colpo the exercise has to judge. Null before the first frame.
+   * not a pressione the exercise has to judge. Null before the first frame.
    */
-  capture(nowMs: number): Colpo | null;
+  capture(nowMs: number): Pressione | null;
 }
 
 export function createListener(options: ListenerOptions = {}): Listener {
@@ -232,7 +232,7 @@ export function createListener(options: ListenerOptions = {}): Listener {
   let lastDetection: Detection | null = null;
   let lastStability = 0;
 
-  function colpo(at: number): Colpo | null {
+  function pressione(at: number): Pressione | null {
     const detection = lastDetection;
     if (detection === null) return null;
     return {
@@ -274,18 +274,18 @@ export function createListener(options: ListenerOptions = {}): Listener {
 
     const struck = onset.push(measurement.attackSpectrum, nowMs);
     if (struck) pendingAt = nowMs;
-    // Read before clearing: the frame that judges a colpo is still the frame in
+    // Read before clearing: the frame that judges a pressione is still the frame in
     // which the page says it is about to.
     const reading = pendingAt !== null;
 
     // Read the pitch after the note has settled, not at the attack: the 341 ms
     // window is still filling with the silence that came before it.
-    const colpi: Colpo[] = [];
+    const pressioni: Pressione[] = [];
     if (pendingAt !== null && nowMs - pendingAt >= readDelayMs) {
       const at = pendingAt;
       pendingAt = null;
-      const read = colpo(at);
-      if (read !== null && read.credibility >= minCredibility) colpi.push(read);
+      const read = pressione(at);
+      if (read !== null && read.credibility >= minCredibility) pressioni.push(read);
     }
 
     return {
@@ -300,13 +300,13 @@ export function createListener(options: ListenerOptions = {}): Listener {
       armed: onset.armed,
       reading,
       stability,
-      colpi,
+      pressioni,
     };
   }
 
   return {
     push,
-    capture: colpo,
+    capture: pressione,
     setRange(low: number, high: number): void {
       range = { low, high };
       onset.reset();

@@ -5,8 +5,8 @@
  * :License:  GNU General Public License version 3 or later
  *
  * What the log has to say, checked on a real session: the targets the exercise
- * asked, in the order it asked them, each with its verdict and the colpi the
- * microphone heard; the measurement each colpo arrived with, or `null` where
+ * asked, in the order it asked them, each with its verdict and the pressioni the
+ * microphone heard; the measurement each pressione arrived with, or `null` where
  * there was none; the trial that was in force; and an honest word about the
  * soundcheck that does not exist yet.
  *
@@ -17,11 +17,11 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Detection } from '../src/audio/detect';
-import { createExercise, type Exercise, type HeardColpo } from '../src/exercise/controller';
+import { createExercise, type Exercise, type HeardPressione } from '../src/exercise/controller';
 import { DEFAULT_SETTINGS, normalise, type Settings } from '../src/exercise/settings';
 import type { Placement } from '../src/score/staff';
 import type { SessionConfig } from '../src/session/engine';
-import { logFileName, logJson, sessionLog, type ColpoLog } from '../src/session/log';
+import { logFileName, logJson, sessionLog, type PressioneLog } from '../src/session/log';
 
 /** A page that only writes down what it was asked to do. */
 const ports = {
@@ -38,14 +38,14 @@ function session(keys: number[], config: SessionConfig = {}): Exercise {
   return createExercise({ keys, config, ports });
 }
 
-/** A colpo of the listener, with whatever the detector measured on it. */
-function colpo(midi: number, extra: Partial<HeardColpo> = {}): HeardColpo {
+/** A pressione of the listener, with whatever the detector measured on it. */
+function pressione(midi: number, extra: Partial<HeardPressione> = {}): HeardPressione {
   return { midi, ambiguous: false, ...extra };
 }
 
-/** A frame of the microphone, with no colpo in it. */
+/** A frame of the microphone, with no pressione in it. */
 function quiet(at: number, levelDb = -20) {
-  return { at, levelDb, colpi: [] as HeardColpo[] };
+  return { at, levelDb, pressioni: [] as HeardPressione[] };
 }
 
 /** Everything the detector saw, as the listener hands it over. */
@@ -82,7 +82,7 @@ function written(
 describe('the log of a session', () => {
   it('is JSON a teacher can open: indented, one field per line', () => {
     const exercise = session([60]);
-    exercise.feed({ at: 40, levelDb: -20, colpi: [colpo(60)] });
+    exercise.feed({ at: 40, levelDb: -20, pressioni: [pressione(60)] });
 
     const { log } = written(exercise);
     const text = logJson(log);
@@ -96,7 +96,7 @@ describe('the log of a session', () => {
 
   it('names its fields in Italian, and in a fixed order, so nothing has to be guessed', () => {
     const exercise = session([60]);
-    exercise.feed({ at: 40, levelDb: -20, colpi: [colpo(60)] });
+    exercise.feed({ at: 40, levelDb: -20, pressioni: [pressione(60)] });
 
     const { parsed } = written(exercise);
 
@@ -107,24 +107,24 @@ describe('the log of a session', () => {
       'soundcheck',
       'fine',
       'punteggio',
-      'bersagli',
+      'note',
     ]);
     expect(Object.keys(parsed.impostazioni)).toEqual([
       'intervallo',
       'durata_secondi',
-      'tempo_per_bersaglio_secondi',
-      'tetto_colpi',
+      'tempo_per_nota_secondi',
+      'tentativi_massimi',
       'modalita',
-      'preset',
+      'lista_predefinita',
     ]);
-    expect(Object.keys(parsed.bersagli[0])).toEqual([
+    expect(Object.keys(parsed.note[0])).toEqual([
       'tasto',
       'nome',
       'verdetto',
       'millisecondi',
       'inizio_ms',
       'fine_ms',
-      'colpi',
+      'pressioni',
     ]);
     expect(parsed.quando).toBe(new Date(2026, 10, 8, 22, 30, 11).toISOString());
   });
@@ -144,37 +144,37 @@ describe('the log of a session', () => {
       targetTimeoutMs: settings.targetTimeoutMs,
       wrongLimit: settings.wrongLimit ?? undefined,
     });
-    exercise.feed({ at: 40, levelDb: -20, colpi: [colpo(60)] });
+    exercise.feed({ at: 40, levelDb: -20, pressioni: [pressione(60)] });
 
     const { parsed } = written(exercise, settings);
 
     expect(parsed.impostazioni).toEqual({
       intervallo: { minimo: 35, massimo: 86 },
       durata_secondi: 90,
-      tempo_per_bersaglio_secondi: 6,
-      tetto_colpi: 3,
-      modalita: 'preset',
-      preset: 'Le due chiavi',
+      tempo_per_nota_secondi: 6,
+      tentativi_massimi: 3,
+      modalita: 'lista predefinita',
+      lista_predefinita: 'Le due chiavi',
     });
   });
 
-  it('says casuale and lista the way the teacher chose them, with no preset left over', () => {
+  it("says casuale and the teacher's list the way she chose them, with no predefined list left over", () => {
     const exercise = session([60]);
-    exercise.feed({ at: 40, levelDb: -20, colpi: [colpo(60)] });
+    exercise.feed({ at: 40, levelDb: -20, pressioni: [pressione(60)] });
 
     const casual = written(exercise).parsed.impostazioni;
     expect(casual.modalita).toBe('casuale');
-    expect(casual.preset).toBeNull();
-    expect(casual.tetto_colpi).toBeNull();
+    expect(casual.lista_predefinita).toBeNull();
+    expect(casual.tentativi_massimi).toBeNull();
 
     const listed = written(exercise, { ...DEFAULT_SETTINGS, mode: 'list' }).parsed.impostazioni;
-    expect(listed.modalita).toBe('lista');
-    expect(listed.preset).toBeNull();
+    expect(listed.modalita).toBe("lista dell'insegnante");
+    expect(listed.lista_predefinita).toBeNull();
   });
 
   it('says the soundcheck has not measured the range, instead of pretending it did', () => {
     const exercise = session([60]);
-    exercise.feed({ at: 40, levelDb: -20, colpi: [colpo(60)] });
+    exercise.feed({ at: 40, levelDb: -20, pressioni: [pressione(60)] });
 
     const { parsed } = written(exercise);
 
@@ -189,7 +189,7 @@ describe('the log of a session', () => {
 
   it('has a place for the range a soundcheck measured, and fills it when there is one', () => {
     const exercise = session([60]);
-    exercise.feed({ at: 40, levelDb: -20, colpi: [colpo(60)] });
+    exercise.feed({ at: 40, levelDb: -20, pressioni: [pressione(60)] });
 
     const measured = sessionLog({
       when: new Date(2026, 10, 8, 22, 30, 11),
@@ -205,32 +205,32 @@ describe('the log of a session', () => {
     expect(measured.soundcheck.nota).not.toMatch(/non è ancora stato fatto/i);
   });
 
-  it('logs the targets the session asked, in order, with their verdict and their colpi', () => {
+  it('logs the targets the session asked, in order, with their verdict and their pressioni', () => {
     const exercise = session([60, 62, 64]);
     exercise.feed(quiet(40));
-    exercise.feed({ at: 1_040, levelDb: -20, colpi: [colpo(60)] });
-    exercise.feed({ at: 1_080, levelDb: -20, colpi: [colpo(61)] });
+    exercise.feed({ at: 1_040, levelDb: -20, pressioni: [pressione(60)] });
+    exercise.feed({ at: 1_080, levelDb: -20, pressioni: [pressione(61)] });
     exercise.feed(quiet(9_080));
     exercise.feed(quiet(17_080));
 
     const { parsed } = written(exercise);
 
-    expect(parsed.bersagli.map((target: any) => [target.tasto, target.nome, target.verdetto]))
+    expect(parsed.note.map((target: any) => [target.tasto, target.nome, target.verdetto]))
       .toEqual([
         [60, 'Do4', 'corretta'],
         [62, 'Re4', 'sbagliata'],
         [64, 'Mi4', 'saltata'],
       ]);
-    expect(parsed.bersagli.map((target: any) => target.colpi.length)).toEqual([1, 1, 0]);
-    expect(parsed.bersagli[0].millisecondi).toBe(1_000);
-    // The file says when each bersaglio appeared and when it left the staff, on
+    expect(parsed.note.map((target: any) => target.pressioni.length)).toEqual([1, 1, 0]);
+    expect(parsed.note[0].millisecondi).toBe(1_000);
+    // The file says when each nota appeared and when it left the staff, on
     // the page's clock: the instant is evidence, not a duration to be inferred.
-    for (const target of parsed.bersagli) {
+    for (const target of parsed.note) {
       expect(typeof target.inizio_ms).toBe('number');
       expect(target.fine_ms).toBeGreaterThanOrEqual(target.inizio_ms);
     }
-    expect(parsed.bersagli[1].colpi[0].altezza).toBe(61);
-    expect(parsed.bersagli[0].colpi[0].altezza).toBe(60);
+    expect(parsed.note[1].pressioni[0].altezza).toBe(61);
+    expect(parsed.note[0].pressioni[0].altezza).toBe(60);
     expect(parsed.punteggio).toEqual({
       corrette: 1,
       sbagliate: 1,
@@ -238,19 +238,19 @@ describe('the log of a session', () => {
       totale: 3,
       note_al_minuto: 10.6,
     });
-    expect(parsed.fine.motivo).toBe('lista');
+    expect(parsed.fine.motivo).toBe('note');
   });
 
-  it('marks an ambiguous colpo and does not count it as a wrong one', () => {
+  it('marks an ambiguous pressione and does not count it as a wrong one', () => {
     const exercise = session([60]);
     exercise.feed(quiet(40));
-    exercise.feed({ at: 1_040, levelDb: -20, colpi: [colpo(60, { ambiguous: true })] });
+    exercise.feed({ at: 1_040, levelDb: -20, pressioni: [pressione(60, { ambiguous: true })] });
     exercise.feed(quiet(9_040));
 
     const { parsed } = written(exercise);
 
-    expect(parsed.bersagli[0].verdetto).toBe('saltata');
-    expect(parsed.bersagli[0].colpi).toEqual([
+    expect(parsed.note[0].verdetto).toBe('saltata');
+    expect(parsed.note[0].pressioni).toEqual([
       expect.objectContaining({ altezza: 60, ambiguo: true }),
     ]);
     expect(parsed.punteggio).toEqual({
@@ -258,19 +258,19 @@ describe('the log of a session', () => {
       sbagliate: 0,
       saltate: 1,
       totale: 1,
-      // The session ended when the last bersaglio did: eight seconds, not nine.
+      // The session ended when the last nota did: eight seconds, not nine.
       note_al_minuto: 7.5,
     });
   });
 
-  it('writes the measurement a colpo arrived with, and null where there was none', () => {
+  it('writes the measurement a pressione arrived with, and null where there was none', () => {
     const exercise = session([60]);
     exercise.feed(quiet(40));
     exercise.feed({
       at: 1_040,
       levelDb: -20,
-      colpi: [
-        colpo(61, {
+      pressioni: [
+        pressione(61, {
           at: 1_000,
           credibility: 9.2,
           levelDb: -18.4,
@@ -279,11 +279,11 @@ describe('the log of a session', () => {
         }),
       ],
     });
-    exercise.feed({ at: 1_080, levelDb: -20, colpi: [colpo(63)] });
-    exercise.feed({ at: 1_120, levelDb: -20, colpi: [colpo(60)] });
+    exercise.feed({ at: 1_080, levelDb: -20, pressioni: [pressione(63)] });
+    exercise.feed({ at: 1_120, levelDb: -20, pressioni: [pressione(60)] });
 
     const { parsed } = written(exercise);
-    const heard: ColpoLog[] = parsed.bersagli[0].colpi;
+    const heard: PressioneLog[] = parsed.note[0].pressioni;
 
     expect(heard[0]).toEqual({
       altezza: 61,
@@ -297,7 +297,7 @@ describe('the log of a session', () => {
       // The attack, not the frame it was read on: the page forwards both.
       istante_ms: 1_000,
     });
-    // A colpo with no measurement behind it says so, rather than inventing one.
+    // A pressione with no measurement behind it says so, rather than inventing one.
     expect(heard[1]).toEqual({
       altezza: 63,
       frequenza_hz: null,
@@ -318,7 +318,7 @@ describe('the log of a session', () => {
 
     const { parsed } = written(exercise);
 
-    expect(parsed.bersagli).toEqual([]);
+    expect(parsed.note).toEqual([]);
     expect(parsed.fine).toEqual({ motivo: 'tempo', secondi: 1 });
   });
 

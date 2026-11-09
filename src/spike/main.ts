@@ -21,7 +21,7 @@ import {
   ONSET_WINDOW,
   READ_DELAY_MS,
   createListener,
-  type Colpo,
+  type Pressione,
 } from '../audio/listener';
 import {
   HIGHEST_MIDI,
@@ -53,7 +53,7 @@ const RANGES: NoteRange[] = [
 
 type Verdict = 'giusto' | 'ottava' | 'altro';
 
-/** One row of the log this page downloads: the colpo, plus the conditions it was read under. */
+/** One row of the log this page downloads: the pressione, plus the conditions it was read under. */
 interface LogEntry {
   at: number;
   reference: number;
@@ -68,7 +68,7 @@ interface LogEntry {
   octaveMarginDb: number;
   levelDb: number;
   verdict: Verdict;
-  /** The settings in force for this colpo, not the ones at download time. */
+  /** The settings in force for this pressione, not the ones at download time. */
   minCredibility: number;
   rangeLow: number;
   rangeHigh: number;
@@ -79,7 +79,7 @@ interface LogEntry {
   octaveBelowMagnitude: number;
   /** How much the winner stands out from the median candidate: this is the gate. */
   credibility: number;
-  /** The octave was too close to call: this colpo must not be judged. */
+  /** The octave was too close to call: this pressione must not be judged. */
   ambiguous: boolean;
   octaveFlipped: boolean;
   top: { midi: number; name: string; score: number }[];
@@ -297,7 +297,7 @@ function showDetection(detection: Detection, levelDb: number): void {
 }
 
 function flashVerdict(entry: LogEntry): void {
-  // An ambiguous colpo is not a mistake by the player and must not cost an
+  // An ambiguous pressione is not a mistake by the player and must not cost an
   // attempt: the exercise asks to play it again.
   if (entry.ambiguous) {
     flashLine.className = 'warn';
@@ -329,28 +329,28 @@ function flashVerdict(entry: LogEntry): void {
 }
 
 function renderCounters(): void {
-  const totals = { colpi: log.length, giusto: 0, ottava: 0, altro: 0 };
+  const totals = { pressioni: log.length, giusto: 0, ottava: 0, altro: 0 };
   const ambiguous = log.filter((entry) => entry.ambiguous).length;
-  const perReference = new Map<number, { colpi: number; giusto: number; ottava: number; altro: number }>();
+  const perReference = new Map<number, { pressioni: number; giusto: number; ottava: number; altro: number }>();
 
   for (const entry of log) {
     totals[entry.verdict] += 1;
     const bucket = perReference.get(entry.reference) ??
-      { colpi: 0, giusto: 0, ottava: 0, altro: 0 };
-    bucket.colpi += 1;
+      { pressioni: 0, giusto: 0, ottava: 0, altro: 0 };
+    bucket.pressioni += 1;
     bucket[entry.verdict] += 1;
     perReference.set(entry.reference, bucket);
   }
 
   countersFacts.replaceChildren();
   const facts: [string, string][] = [
-    ['colpi', String(totals.colpi)],
+    ['pressioni', String(totals.pressioni)],
     ['giusti', String(totals.giusto)],
     ['ottave sbagliate', String(totals.ottava)],
     ['altre note', String(totals.altro)],
   ];
-  if (totals.colpi > 0) {
-    const right = (100 * totals.giusto) / totals.colpi;
+  if (totals.pressioni > 0) {
+    const right = (100 * totals.giusto) / totals.pressioni;
     facts.push(['precisione', `${round(right, 1)} %`]);
   }
   facts.push(['ambigui (da ripetere)', String(ambiguous)]);
@@ -370,7 +370,7 @@ function renderCounters(): void {
     const name = document.createElement('td');
     name.textContent = midiToLabel(midi);
     row.append(name);
-    for (const value of [bucket.colpi, bucket.giusto, bucket.ottava, bucket.altro]) {
+    for (const value of [bucket.pressioni, bucket.giusto, bucket.ottava, bucket.altro]) {
       const cell = document.createElement('td');
       cell.className = 'num';
       cell.textContent = String(value);
@@ -380,31 +380,31 @@ function renderCounters(): void {
   }
 }
 
-function record(colpo: Colpo): void {
-  const detection = colpo.detection;
+function record(pressione: Pressione): void {
+  const detection = pressione.detection;
   const entry: LogEntry = {
-    at: Math.round(colpo.at),
+    at: Math.round(pressione.at),
     reference,
     referenceName: midiToName(reference),
-    detected: colpo.midi,
-    detectedName: midiToName(colpo.midi),
+    detected: pressione.midi,
+    detectedName: midiToName(pressione.midi),
     measuredHz: round(detection.measuredHz, 2),
-    detectedHz: round(colpo.hz, 2),
+    detectedHz: round(pressione.hz, 2),
     score: round(detection.best.score, 5),
     marginDb: round(detection.marginDb, 1),
     octaveMarginDb: round(detection.octaveMarginDb, 1),
-    levelDb: round(colpo.levelDb, 1),
-    verdict: verdictOf(reference, colpo.midi),
-    // The settings in force for this colpo, not the ones at download time.
+    levelDb: round(pressione.levelDb, 1),
+    verdict: verdictOf(reference, pressione.midi),
+    // The settings in force for this pressione, not the ones at download time.
     minCredibility: listener.minCredibility,
     rangeLow: listener.range.low,
     rangeHigh: listener.range.high,
-    stability: colpo.stability,
+    stability: pressione.stability,
     fundamentalPresent: detection.fundamentalPresent,
     fundamentalMagnitude: round(detection.fundamentalMagnitude, 5),
     octaveBelowMagnitude: round(detection.octaveBelowMagnitude, 5),
-    credibility: round(colpo.credibility, 2),
-    ambiguous: colpo.ambiguous,
+    credibility: round(pressione.credibility, 2),
+    ambiguous: pressione.ambiguous,
     octaveFlipped: detection.octaveFlipped,
     top: detection.candidates.slice(0, 5).map((candidate) => ({
       midi: candidate.midi,
@@ -473,7 +473,7 @@ function analyse(nowMs: number): void {
       ` · ${frame.armed ? 'armato' : 'in attesa che il suono scenda'}` +
       (frame.reading ? ' · lettura fra poco' : '');
 
-  for (const colpo of frame.colpi) record(colpo);
+  for (const pressione of frame.pressioni) record(pressione);
 }
 
 function loop(nowMs: number): void {
@@ -538,13 +538,13 @@ async function start(): Promise<void> {
   startButton.disabled = true;
   stopButton.disabled = false;
   measureButton.disabled = false;
-  setStatus('in ascolto', true);
+  setStatus('microfono acceso', true);
 
   if (noiseReport === null) {
     flashLine.className = 'warn';
     flashLine.textContent =
       'In silenzio, prima di suonare, premi «Misura il rumore della stanza»: dice quanto è ' +
-      'silenziosa (e se c’è ronzio di rete). Un colpo conta solo se la nota vince almeno ' +
+      'silenziosa (e se c’è ronzio di rete). Una pressione conta solo se la nota vince almeno ' +
       `${listener.minCredibility.toFixed(1)} volte sulla mediana di tutti i candidati.`;
   }
 
@@ -618,6 +618,8 @@ function download(): void {
       partialTolerance: 0.02,
       harmonics: 8,
     },
+    // The archived measurement logs in the repository carry this key: renaming
+    // it would break joining a new round with rounds 1–5.
     colpi: log,
     noise: noiseReport,
   };
@@ -637,8 +639,8 @@ stopButton.addEventListener('click', stop);
 downloadButton.addEventListener('click', download);
 
 measureButton.addEventListener('click', () => {
-  const colpo = listener.capture(performance.now());
-  if (colpo !== null) record(colpo);
+  const pressione = listener.capture(performance.now());
+  if (pressione !== null) record(pressione);
 });
 
 notesButton.addEventListener('click', () => {
@@ -669,7 +671,7 @@ function setReference(midi: number): void {
 
   // The change has to be visible where the eye is: the big readout is what one
   // watches while playing, and a reference that did not move is a whole set of
-  // colpi scored against the wrong note (measured: three D4 under a D#4
+  // pressioni scored against the wrong note (measured: three D4 under a D#4
   // reference, eleven seconds apart).
   refBig.textContent = `riferimento: ${midiToLabel(reference)}`;
   if (changed) {
@@ -679,7 +681,7 @@ function setReference(midi: number): void {
     }, 600);
   }
 
-  // The log is never cleared: every colpo carries its own reference, and the
+  // The log is never cleared: every pressione carries its own reference, and the
   // table below groups them by it. Testing ten notes in a row is the point.
   flashLine.textContent = '';
 }

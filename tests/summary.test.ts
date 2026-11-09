@@ -23,7 +23,7 @@ describe('the summary', () => {
   it('keeps the three verdicts apart and makes the total their sum', () => {
     const run = session([60, 62, 64]);
     run.hit(60);              // centered
-    run.hit(61);              // wrong colpo…
+    run.hit(61);              // wrong pressione…
     run.tick(8_000);          // …and the clock closes the target as wrong
     run.tick(8_000);          // nobody plays the third: skipped
 

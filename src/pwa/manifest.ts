@@ -27,7 +27,7 @@ export const MANIFEST_PATH = '/manifest.json';
 export const MANIFEST = {
   name: 'Suona la nota',
   short_name: 'Suona',
-  description: 'Esercizi di lettura del pentagramma con ascolto dal microfono',
+  description: 'Esercizi di lettura del pentagramma con il microfono',
   lang: 'it',
   start_url: '/',
   scope: '/',

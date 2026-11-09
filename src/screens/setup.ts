@@ -4,7 +4,7 @@
  * :Author:   Alberto Berti <alberto@metapensiero.it>
  * :License:  GNU General Public License version 3 or later
  *
- * The setup screen: range, clocks, cap, sequence, and the teacher's list with
+ * The setup screen: range, durations, attempt limit, sequence, and the teacher's list with
  * its keyboard. It owns the controls and reads nothing that belongs to another
  * screen; what it needs to know about a session — whether one is running or
  * being built — it asks, through a port.
@@ -12,7 +12,7 @@
  * Two parts of the trial live here and not in `../exercise`: the list the
  * teacher ticks (remembered in the browser and nowhere else, ADR 0011), and the
  * rule that the controls write back what the session will actually use, so the
- * screen never promises a clock or a cap the session does not apply.
+ * screen never promises a duration or a limit the session does not apply.
  */
 import { midiToItalian, pianoKeys } from '../audio/notes';
 import {
@@ -59,12 +59,12 @@ export interface SetupPorts {
   readonly begin: () => void;
   /** The portata the phone remembers, or `null` when nothing was measured. */
   readonly portata: () => Portata | null;
-  /** «Misura l'ascolto» was pressed: the page opens the soundcheck screen. */
+  /** «Misura la sensibilità» was pressed: the page opens the soundcheck screen. */
   readonly measure: () => void;
 }
 
 /** The name of the file a teacher keeps and hands to another phone. */
-const LIST_FILE_NAME = 'lista-della-maestra.json';
+const LIST_FILE_NAME = 'lista-dell-insegnante.json';
 
 export function createSetupScreen(ports: SetupPorts): SetupScreen {
   const lowestSelect = element<HTMLSelectElement>('lowest');
@@ -261,9 +261,9 @@ export function createSetupScreen(ports: SetupPorts): SetupScreen {
   }
 
   /**
-   * The trial cannot start with no targets: say why instead of starting nothing,
+   * The trial cannot start with no notes: say why instead of starting nothing,
    * and answer with it. The controls get back what the trial will actually use,
-   * so the screen never promises a clock or a cap the session does not apply.
+   * so the screen never promises a duration or a limit the session does not apply.
    */
   function refresh(): string | null {
     const settings = chosenSettings();
@@ -297,7 +297,7 @@ export function createSetupScreen(ports: SetupPorts): SetupScreen {
   /** The controls show a trial that came from somewhere else: the URL, or the defaults. */
   function apply(settings: Settings): void {
     applyRange(settings.range);
-    // A range that is neither preset is one somebody edited: no radio is right.
+    // A range that matches neither interval is one somebody edited: no radio is right.
     const rangePreset =
       settings.range.lowest === BASE_RANGE.lowest && settings.range.highest === BASE_RANGE.highest
         ? 'base'
@@ -342,7 +342,7 @@ export function createSetupScreen(ports: SetupPorts): SetupScreen {
   for (const select of [lowestSelect, highestSelect]) {
     select.addEventListener('change', () => {
       if (ports.busy()) return;
-      // A hand-edited range is no longer the preset: the two radios go back
+      // A hand-edited range is no longer an interval: the two radios go back
       // to no choice, and the selects show the range actually in force.
       for (const input of rangeInputs) input.checked = false;
       applyRange(chosenRange());

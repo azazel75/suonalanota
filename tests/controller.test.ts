@@ -5,7 +5,7 @@
  * :License:  GNU General Public License version 3 or later
  *
  * The behaviour the ticket asks for, checked without a browser: a target on
- * screen, a colpo judged at once, green on the right key, red on the wrong one,
+ * screen, a pressione judged at once, green on the right key, red on the wrong one,
  * no flash at all when the octave is uncertain, the clock moving the target on,
  * the pause stopping it, and the message that tells a silent room from a
  * wrong note.
@@ -16,7 +16,7 @@ import {
   REPEAT_MESSAGE,
   SILENCE_MESSAGE,
   createExercise,
-  type HeardColpo,
+  type HeardPressione,
 } from '../src/exercise/controller';
 import type { Placement } from '../src/score/staff';
 
@@ -36,14 +36,14 @@ function recorder() {
   };
 }
 
-/** One colpo of the listener, as the screen sees it. */
-function colpo(midi: number, ambiguous = false): HeardColpo {
+/** One pressione of the listener, as the screen sees it. */
+function pressione(midi: number, ambiguous = false): HeardPressione {
   return { midi, ambiguous };
 }
 
 /** A frame of silence, at a given instant. */
 function quiet(at: number, levelDb = -80) {
-  return { at, levelDb, colpi: [] as HeardColpo[] };
+  return { at, levelDb, pressioni: [] as HeardPressione[] };
 }
 
 /** What a page did, filtered to the calls a test is about. */
@@ -65,7 +65,7 @@ describe('the exercise screen', () => {
 
   it('turns green, beeps once and moves on when the key is right', () => {
     const { calls, exercise: ex } = exercise([60, 62]);
-    ex.feed({ at: 40, levelDb: -20, colpi: [colpo(60)] });
+    ex.feed({ at: 40, levelDb: -20, pressioni: [pressione(60)] });
     expect(effects(calls, 'flash', 'beep', 'draw')).toEqual([
       'draw:60:treble',
       'flash:centered',
@@ -76,7 +76,7 @@ describe('the exercise screen', () => {
 
   it('turns red, beeps once and keeps the same target when the key is wrong', () => {
     const { calls, exercise: ex } = exercise([60]);
-    ex.feed({ at: 40, levelDb: -20, colpi: [colpo(61)] });
+    ex.feed({ at: 40, levelDb: -20, pressioni: [pressione(61)] });
     expect(effects(calls, 'flash', 'beep', 'draw')).toEqual([
       'draw:60:treble',
       'flash:wrong',
@@ -85,18 +85,18 @@ describe('the exercise screen', () => {
     expect(ex.state().current?.wrongHits).toBe(1);
   });
 
-  it('does not flash and does not beep on an ambiguous colpo, but asks for the note again', () => {
+  it('does not flash and does not beep on an ambiguous pressione, but asks for the note again', () => {
     const { calls, exercise: ex } = exercise([60]);
-    ex.feed({ at: 40, levelDb: -20, colpi: [colpo(60, true)] });
+    ex.feed({ at: 40, levelDb: -20, pressioni: [pressione(60, true)] });
     expect(effects(calls, 'flash', 'beep')).toEqual([]);
     expect(effects(calls, 'message')).toEqual([`message:${REPEAT_MESSAGE}`]);
     expect(ex.state().current?.wrongHits).toBe(0);
   });
 
-  it('takes the invitation to repeat away at the next colpo that is judged', () => {
+  it('takes the invitation to repeat away at the next pressione that is judged', () => {
     const { calls, exercise: ex } = exercise([60]);
-    ex.feed({ at: 40, levelDb: -20, colpi: [colpo(60, true)] });
-    ex.feed({ at: 80, levelDb: -20, colpi: [colpo(61)] });
+    ex.feed({ at: 40, levelDb: -20, pressioni: [pressione(60, true)] });
+    ex.feed({ at: 80, levelDb: -20, pressioni: [pressione(61)] });
     expect(effects(calls, 'message')).toEqual([`message:${REPEAT_MESSAGE}`, 'message:-']);
   });
 
@@ -147,18 +147,18 @@ describe('the exercise screen', () => {
     expect(effects(calls, 'message')).toEqual([]);
   });
 
-  it('drops the volume message at the first colpo', () => {
+  it('drops the volume message at the first pressione', () => {
     const { calls, exercise: ex } = exercise([60]);
     ex.feed(quiet(0, -80));
     ex.feed(quiet(5_100, -80));
-    ex.feed({ at: 5_140, levelDb: -20, colpi: [colpo(61)] });
+    ex.feed({ at: 5_140, levelDb: -20, pressioni: [pressione(61)] });
     expect(effects(calls, 'message')).toEqual([`message:${SILENCE_MESSAGE}`, 'message:-']);
   });
 
   it('alternates the middle C from one target to the next', () => {
     const { calls, exercise: ex } = exercise([60, 60, 60]);
-    ex.feed({ at: 40, levelDb: -20, colpi: [colpo(60)] });
-    ex.feed({ at: 80, levelDb: -20, colpi: [colpo(60)] });
+    ex.feed({ at: 40, levelDb: -20, pressioni: [pressione(60)] });
+    ex.feed({ at: 80, levelDb: -20, pressioni: [pressione(60)] });
     expect(effects(calls, 'draw')).toEqual(['draw:60:treble', 'draw:60:bass', 'draw:60:treble']);
   });
 });

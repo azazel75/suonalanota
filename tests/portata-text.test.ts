@@ -5,7 +5,7 @@
  * :License:  GNU General Public License version 3 or later
  *
  * Two lines, tested because they are what a teacher and an allievə actually
- * read: the state of the microphone under «Ascolto», and the reason a trial
+ * read: the state of the microphone under «Sensibilità del dispositivo», and the reason a trial
  * cannot start when the phone hears nothing inside it.
  */
 import { describe, expect, it } from 'vitest';
@@ -43,14 +43,14 @@ describe('why a trial cannot start', () => {
 
   it('says so when it leaves none', () => {
     expect(trialProblem(DEFAULT_SETTINGS, measured(73, 84))).toBe(
-      "La portata misurata non lascia note in questo range: rifai l'ascolto, o allarga il range.",
+      "La portata misurata non lascia note in questo intervallo: rifai la misura, o allarga l'intervallo.",
     );
   });
 
   it("says when the measurement empties the teacher's list", () => {
     const listed: Settings = { ...DEFAULT_SETTINGS, mode: 'list', list: [60, 62] };
     expect(trialProblem(listed, measured(72, 84))).toBe(
-      'Nessun tasto della lista è nel range scelto.',
+      "Nessun tasto della lista è nell'intervallo scelto.",
     );
   });
 });

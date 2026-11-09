@@ -23,7 +23,7 @@
  *    interval can only shrink, and it shrinks to the outermost key the device
  *    proved; two ends that cross mean the allievə did not play what was asked,
  *    and no interval is a measurement;
- *  - **three ambiguous colpi in a row on the same key** give that key up
+ *  - **three ambiguous pressioni in a row on the same key** give that key up
  *    (ADR 0008): that is a fact about the device, not about the allievə;
  *  - **a room that never made a sound** is answered with the volume sentence,
  *    not with four more timeouts (the ticket's headphones clause) — but only
@@ -55,8 +55,8 @@ const CENTRAL = 60;
 const BASS: readonly Probe[] = ['basso', 'basso2'];
 const TREBLE: readonly Probe[] = ['alto', 'alto2'];
 
-/** A colpo, as far as the soundcheck cares: which key, and whether it was decided. */
-export interface SoundcheckColpo {
+/** A pressione, as far as the soundcheck cares: which key, and whether it was decided. */
+export interface SoundcheckPressione {
   readonly midi: number;
   readonly ambiguous: boolean;
 }
@@ -64,7 +64,7 @@ export interface SoundcheckColpo {
 /** One frame of the microphone. */
 export interface SoundcheckFrame {
   readonly levelDb: number;
-  readonly colpi: readonly SoundcheckColpo[];
+  readonly pressioni: readonly SoundcheckPressione[];
 }
 
 export interface SoundcheckOptions {
@@ -112,7 +112,7 @@ export function createSoundcheck(options: SoundcheckOptions): Soundcheck {
   let portata: Portata | null = null;
   const heard = new Map<Probe, number>();
   const excluded: number[] = [];
-  /** How many ambiguous colpi in a row named the same key, and which. */
+  /** How many ambiguous pressioni in a row named the same key, and which. */
   let confused: { midi: number; count: number } | null = null;
   /** Quiet timeouts in a row: the second one is the volume, the first a slow hand. */
   let quietTimeouts = 0;
@@ -187,17 +187,17 @@ export function createSoundcheck(options: SoundcheckOptions): Soundcheck {
     advance(now);
   }
 
-  function onColpo(colpo: SoundcheckColpo, now: number): void {
-    if (colpo.ambiguous) {
+  function onPressione(pressione: SoundcheckPressione, now: number): void {
+    if (pressione.ambiguous) {
       confused =
-        confused !== null && confused.midi === colpo.midi
-          ? { midi: colpo.midi, count: confused.count + 1 }
-          : { midi: colpo.midi, count: 1 };
-      if (confused.count >= 3) giveUp(colpo.midi, now);
+        confused !== null && confused.midi === pressione.midi
+          ? { midi: pressione.midi, count: confused.count + 1 }
+          : { midi: pressione.midi, count: 1 };
+      if (confused.count >= 3) giveUp(pressione.midi, now);
       return;
     }
     confused = null;
-    hear(colpo.midi, now);
+    hear(pressione.midi, now);
   }
 
   function start(now: number): void {
@@ -210,10 +210,10 @@ export function createSoundcheck(options: SoundcheckOptions): Soundcheck {
     if (index === 0 || finished) return;
 
     peak = Math.max(peak, frame.levelDb);
-    // The listener completes at most one colpo per frame; the rest of the frame
+    // The listener completes at most one pressione per frame; the rest of the frame
     // would belong to a probe that has just started, and is not evidence for it.
-    const colpo = frame.colpi[0];
-    if (colpo !== undefined) onColpo(colpo, now);
+    const pressione = frame.pressioni[0];
+    if (pressione !== undefined) onPressione(pressione, now);
     if (finished) return;
 
     if (now - probeStartedAt < timeoutMs) return;

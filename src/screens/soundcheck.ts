@@ -144,7 +144,7 @@ export function createSoundcheckScreen(ports: SoundcheckPorts): SoundcheckScreen
       input = await openAudioInput((samples, sampleRate, now) => {
         if (token !== run) return;
         const frame = listener.push(samples, sampleRate, now);
-        running.feed(now, { levelDb: frame.levelDb, colpi: frame.colpi });
+        running.feed(now, { levelDb: frame.levelDb, pressioni: frame.pressioni });
         const snapshot = running.snapshot();
         if (snapshot.finished) settle(snapshot);
         else paint();
@@ -225,7 +225,7 @@ export function createSoundcheckScreen(ports: SoundcheckPorts): SoundcheckScreen
     }
 
     if (phase === 'opening' || phase === 'measuring') {
-      lead.textContent = 'Ascolto in corso: una nota alla volta.';
+      lead.textContent = 'Misura in corso: una nota alla volta.';
       step.textContent =
         snapshot === null || snapshot.probe === null ? OPENING : PROMPTS[snapshot.probe];
       status.textContent = snapshot === null ? '' : `${snapshot.index} di ${PROBES.length}`;

@@ -210,7 +210,7 @@ describe('the onset detector against a real-shaped note', () => {
   }
 
   test('a note held for two seconds, decaying and beating, is exactly one attack', () => {
-    // This is the defect the first spike measured: eleven colpi for three presses,
+    // This is the defect the first spike measured: eleven pressioni for three presses,
     // at 133 and 150 ms from each other, on a tone that was still ringing.
     const detector = createOnsetDetector();
     arm(detector);
@@ -357,7 +357,7 @@ describe('the ambiguity of the octave', () => {
     return magnitudes;
   }
 
-  test('inside the measured overlap the colpo is asked again, not judged', () => {
+  test('inside the measured overlap the pressione is asked again, not judged', () => {
     // Odd partials at 0.3 of the winner's fundamental: between the highest value
     // measured on a resonance (0.214) and the lowest on a pressed string (0.38).
     const detection = analyseSpectrum(bassSpectrum(0.06), SAMPLE_RATE, { octaveEvidence: true });
@@ -366,7 +366,7 @@ describe('the ambiguity of the octave', () => {
     expect(detection.ambiguous).toBe(true);
   });
 
-  test('outside it the detector decides, and the colpo is judged', () => {
+  test('outside it the detector decides, and the pressione is judged', () => {
     const decisive = analyseSpectrum(bassSpectrum(0.1), SAMPLE_RATE, { octaveEvidence: true });
     expect(decisive.ambiguous).toBe(false);
     // Con abbastanza parziali dispari la nota grave vince già da sola: qui conta che

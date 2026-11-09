@@ -24,7 +24,7 @@ circa 2 secondi di suono per pressione. Il suono **non** si estingue completamen
 e la successiva, e va bene così: è la condizione reale di chi studia a casa, ed è quella in cui il
 rilevatore degli attacchi deve funzionare.
 
-Ordine del primo giro: cromatico da Do4 a Fa6, poi La3, Do3, La2, Sol1. 66 note, 265 colpi registrati.
+Ordine del primo giro: cromatico da Do4 a Fa6, poi La3, Do3, La2, Sol1. 66 note, 265 pressioni registrate.
 
 ## Cosa non si tocca fra un giro e l'altro
 
@@ -34,10 +34,10 @@ confronto fra due versioni del codice: è un confronto fra due esperimenti.
 
 ## I giri di misura
 
-| giro | codice | intervallo cercato | soglia | colpi | esito |
+| giro | codice | intervallo cercato | soglia | pressioni | esito |
 | --- | --- | --- | --- | --- | --- |
 | **1** · 7 nov | prima versione | tutti gli 88 tasti | 0,0178 (a fine sessione) | 265 | 72% complessivo |
-| **2** · 8 nov | le cinque correzioni | Si1–Re6 (35–86) | **0,0002** (minimo dello slider, rumore mai misurato) | 243 | 59% grezzo, 75% scartando i colpi sotto 0,002 |
+| **2** · 8 nov | le cinque correzioni | Si1–Re6 (35–86) | **0,0002** (minimo dello slider, rumore mai misurato) | 243 | 59% grezzo, 75% scartando le pressioni sotto 0,002 |
 | **3** · 8 nov | parabola limitata | Si1–Re6 | 0,0002 (il rumore misurato dà comunque il minimo) | 245 | **86% senza la regola dell'ottava**, 74% con |
 | **4** · 8 nov | lettura 150 ms dopo l'attacco, regola spenta | Si1–Re6 | 0,00024 | 264 | 76% grezzo, **82% con credibilità ≥ 4**, **91% perdonando l'ottava** |
 | **5** · quando si potrà | credibilità ≥ 4, riferimento visibile | Si1–Re6 | criterio sulla credibilità | | |
@@ -51,7 +51,7 @@ misura il comportamento che l'applicazione avrà davvero.
 Dal terzo giro, con la frequenza **misurata** e non quella nominale: la mediana degli scarti è
 **+6 cent** (il pianoforte è un filo crescente, praticamente a 440). Nel registro grave la misura non
 può dire nulla: a 48 kHz e 16384 campioni un bin vale 2,93 Hz, che a 65 Hz sono **78 cent** — più di
-mezzo semitono. Il sospetto di Emilia sul Do2 (+56 cent misurati, un solo colpo) è compatibile con
+mezzo semitono. Il sospetto di Emilia sul Do2 (+56 cent misurati, una sola pressione) è compatibile con
 l'accordatura, ma questo log non lo può né confermare né smentire: servirebbe una finestra dieci
 volte più lunga.
 
@@ -95,7 +95,7 @@ fondamentale della nota letta; nel secondo il ritardo in ms fra la salita della 
 acuta.
 
 **Esito del primo giro di sonde (8 nov)**: la sonda `dispari` separa (0,32–0,60 quando la corda grave
-era premuta, ≤ 0,21 quando non lo era, su 7 e 35 colpi), e la regola del rilevatore ora la usa. La
+era premuta, ≤ 0,21 quando non lo era, su 7 e 35 pressioni), e la regola del rilevatore ora la usa. La
 sonda `salita` non separa: entrambe le classi hanno ritardo mediano 0 ms, perché la mezza salita si
 misura rispetto al massimo della banda e una banda di solo rumore ha comunque un massimo. Vedi ADR
 0009.

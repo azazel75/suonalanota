@@ -28,19 +28,113 @@
       *::before,
       *::after { box-sizing: border-box; }
       [hidden] { display: none !important; }
+      /* The shell of an app, not a document: the title never leaves, the card
+         fills what is left of the display, its content scrolls inside it, and
+         the actions sit on the bottom edge where a thumb already is. `100dvh`
+         follows the address bar as it hides, instead of jumping when it does. */
+      html, body { height: 100%; }
       body {
         margin: 0;
-        padding: 20px 14px calc(28px + env(safe-area-inset-bottom));
+        height: 100vh;
+        height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        overscroll-behavior: none;
         background: var(--bg);
         color: var(--text);
         font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
         -webkit-text-size-adjust: 100%;
+        -webkit-tap-highlight-color: transparent;
       }
-      main { max-width: 640px; margin: 0 auto; }
-      h1 { font-size: 22px; margin: 0 0 2px; letter-spacing: -0.02em; }
-      .lead { color: var(--dim); margin: 0 0 18px; }
+      .app-bar {
+        flex: 0 0 auto;
+        width: 100%;
+        max-width: 640px;
+        margin: 0 auto;
+        padding: calc(10px + env(safe-area-inset-top)) 14px 6px;
+      }
+      main {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 0 14px;
+      }
+      h1 { font-size: 20px; margin: 0; letter-spacing: -0.02em; }
+      .lead { color: var(--dim); margin: 0; font-size: 14px; }
       h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--dim); margin: 0 0 10px; }
-      .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px; margin-bottom: 14px; }
+      .card {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+      }
+      /* The only part that scrolls: the document itself never does. */
+      .card > .scroll {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        padding: 14px;
+      }
+      /* The last row is the one a thumb is looking for, and it must be where the
+         thumb already is: pinned to the bottom edge, out of the scroller. */
+      .card > .actions {
+        flex: 0 0 auto;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-top: 1px solid var(--line);
+        background: var(--card);
+      }
+      .card > .actions button { flex: 1 1 120px; width: auto; margin: 0; }
+      .card > .actions > .hint { flex: 1 0 100%; margin: 0; }
+      /* The bug lives on the bottom edge: out of the way, always there. */
+      .app-foot {
+        flex: 0 0 auto;
+        display: flex;
+        justify-content: flex-end;
+        width: 100%;
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 2px 14px calc(2px + env(safe-area-inset-bottom));
+        position: relative;
+      }
+      /* Its list floats over the page instead of pushing it: opening the tools
+         must not reflow the exercise under the reader's hand. */
+      .tools { position: relative; }
+      .tools[open] ul {
+        position: absolute;
+        right: 0;
+        bottom: calc(100% + 6px);
+        width: min(320px, 84vw);
+        margin: 0;
+        padding: 10px 12px 10px 26px;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+        z-index: 5;
+      }
+      button, .key, .choice label { touch-action: manipulation; }
+      /* The staff takes what is left of the card and sits in the middle of it. */
+      #exercise > .scroll { display: flex; flex-direction: column; }
+      #exercise #target { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; }
+      /* A phone lying on its side has no room for the subtitle. */
+      @media (max-height: 560px) {
+        .app-bar .lead { display: none; }
+      }
 
       /* The staff is paper: black ink on a light sheet reads in sunlight too. */
       .sheet { background: var(--paper); border-radius: 12px; padding: 10px 6px; }
@@ -62,7 +156,6 @@
       /* The log is what the session leaves for the teacher: a line that says so, then the ghost button. */
       .log-note { color: var(--dim); font-size: 14px; margin: 20px 0 8px; }
       #log { margin-top: 0; }
-      #restart { margin-top: 6px; }
 
       /* The classifica: a short board on a phone, one row per ragazzə, and the
          player's own row marked. The name is asked first because a row without a
@@ -128,10 +221,10 @@
 
       /* The soundcheck asks one note at a time: the instruction is the biggest thing on the card. */
       .probe { font-size: 19px; font-weight: 600; margin: 6px 0 4px; min-height: 52px; }
-      /* The ascolto lives under the range, folded away: it is for whoever wants it. */
-      #ascolto { margin: 2px 0 12px; }
-      #ascolto p { margin: 6px 0 10px; }
-      #ascolto button { margin-top: 0; }
+      /* The device sensitivity lives under the range, folded away: it is for whoever wants it. */
+      #sensibilita { margin: 2px 0 12px; }
+      #sensibilita p { margin: 6px 0 10px; }
+      #sensibilita button { margin-top: 0; }
 
       /* The teacher's list: one keyboard per octave, so that at 390 px a finger still hits a key. */
       #list-field { margin-top: 12px; }
@@ -204,6 +297,11 @@
 
       details { color: var(--dim); font-size: 14px; }
       summary { cursor: pointer; padding: 6px 2px; }
+      /* The measurement spikes: reachable, not advertised. One bug, in the corner. */
+      .tools { margin: 0; opacity: 0.35; font-size: 13px; }
+      .tools summary { display: inline-flex; padding: 2px; list-style: none; }
+      .tools summary::-webkit-details-marker { display: none; }
+      .tools summary:hover, .tools summary:focus-visible { opacity: 1; color: var(--text); }
       a { color: var(--accent); }
       ul { margin: 6px 0 0; padding-left: 20px; }
       li { margin-bottom: 6px; }
@@ -211,143 +309,167 @@
   </head>
   <body>
     <main>
-      <header>
+      <header class="app-bar">
         <h1>Suona la nota</h1>
         <p class="lead">Leggi la nota sul rigo, poi suonala sul pianoforte.</p>
       </header>
 
       <section class="card" id="avvio" hidden>
-        <!-- The five notes of the soundcheck: one instruction at a time. -->
-        <h2>L'ascolto</h2>
-        <p id="avvio-lead" class="lead"></p>
-        <p id="avvio-step" class="probe"></p>
-        <p id="avvio-status" class="status" role="status"></p>
-        <p id="avvio-message" class="message" role="status" hidden></p>
-        <button id="avvio-start" type="button">Accendi il microfono</button>
-        <button id="avvio-use" type="button" hidden>Usa questa portata</button>
-        <button id="avvio-retry" type="button" class="ghost" hidden>Rifai la misura</button>
-        <button id="avvio-skip" type="button" class="ghost">Salta</button>
+        <div class="scroll">
+          <!-- The five notes of the soundcheck: one instruction at a time. -->
+          <h2>La sensibilità del dispositivo</h2>
+          <p id="avvio-lead" class="lead"></p>
+          <p id="avvio-step" class="probe"></p>
+          <p id="avvio-status" class="status" role="status"></p>
+          <p id="avvio-message" class="message" role="status" hidden></p>
+        </div>
+        <div class="actions">
+          <button id="avvio-start" type="button">Accendi il microfono</button>
+          <button id="avvio-use" type="button" hidden>Usa questa portata</button>
+          <button id="avvio-retry" type="button" class="ghost" hidden>Rifai la misura</button>
+          <button id="avvio-skip" type="button" class="ghost">Salta</button>
+        </div>
       </section>
 
       <section class="card" id="setup">
-        <h2>La prova</h2>
+        <div class="scroll">
+          <h2>La prova</h2>
 
-        <fieldset>
-          <legend>Intervallo</legend>
-          <label class="choice"><input type="radio" name="range" value="base" checked /> base · Do3–Do5</label>
-          <label class="choice"><input type="radio" name="range" value="advanced" /> avanzato · Si1–Re6</label>
-          <div class="pair">
-            <label>Dal <select id="lowest" aria-label="nota più bassa"></select></label>
-            <label>Al <select id="highest" aria-label="nota più alta"></select></label>
-          </div>
-        </fieldset>
-
-        <details id="ascolto">
-          <summary>Ascolto</summary>
-          <p id="portata-state">Portata del telefono: non misurata.</p>
-          <button id="measure" type="button" class="ghost">Misura l'ascolto</button>
-        </details>
-
-        <fieldset>
-          <legend>Orologi</legend>
-          <label class="field"><input id="duration" type="number" min="5" max="600" step="5" inputmode="numeric" value="60" /> secondi di sessione</label>
-          <label class="field"><input id="target-timeout" type="number" min="1" max="30" step="1" inputmode="numeric" value="8" /> secondi per bersaglio</label>
-        </fieldset>
-
-        <fieldset>
-          <legend>Tetto ai colpi</legend>
-          <label class="choice"><input id="cap-on" type="checkbox" /> chiudi il bersaglio dopo</label>
-          <label class="field"><input id="wrong-limit" type="number" min="1" max="20" step="1" inputmode="numeric" value="3" disabled /> colpi errati</label>
-        </fieldset>
-
-        <fieldset>
-          <legend>Sequenza</legend>
-          <label class="choice"><input type="radio" name="mode" value="random" checked /> casuale, senza ripetizioni</label>
-          <label class="choice"><input type="radio" name="mode" value="preset" /> da un preset progressivo</label>
-          <label class="choice"><input type="radio" name="mode" value="list" /> dalla lista della maestra</label>
-          <label class="field" id="preset-field" hidden><select id="preset" aria-label="progressione"></select></label>
-
-          <div id="list-field" hidden>
-            <div id="keyboard" class="keyboard" role="group" aria-label="I tasti della lista della maestra"></div>
-            <p id="list-count"></p>
-            <p id="list-message" role="status" hidden></p>
-            <div class="list-actions">
-              <button id="list-export" type="button" class="ghost">Esporta la lista</button>
-              <button id="list-import" type="button" class="ghost">Importa una lista</button>
+          <fieldset>
+            <legend>Intervallo</legend>
+            <label class="choice"><input type="radio" name="range" value="base" checked /> base · Do3–Do5</label>
+            <label class="choice"><input type="radio" name="range" value="advanced" /> avanzato · Si1–Re6</label>
+            <div class="pair">
+              <label>Dal <select id="lowest" aria-label="nota più bassa"></select></label>
+              <label>Al <select id="highest" aria-label="nota più alta"></select></label>
             </div>
-            <input id="list-file" type="file" accept="application/json,.json" hidden />
-          </div>
-        </fieldset>
+          </fieldset>
 
-        <p id="settings-hint" class="hint" role="status" hidden></p>
-        <button id="begin" type="button">Comincia</button>
+          <details id="sensibilita">
+            <summary>Sensibilità del dispositivo</summary>
+            <p id="portata-state">Portata del telefono: non misurata.</p>
+            <button id="measure" type="button" class="ghost">Misura la sensibilità</button>
+          </details>
+
+          <fieldset>
+            <legend>Durate</legend>
+            <label class="field"><input id="duration" type="number" min="5" max="600" step="5" inputmode="numeric" value="60" /> secondi di durata dell'esercizio</label>
+            <label class="field"><input id="target-timeout" type="number" min="1" max="30" step="1" inputmode="numeric" value="8" /> secondi per nota</label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Numero massimo di tentativi</legend>
+            <label class="choice"><input id="cap-on" type="checkbox" /> Passa alla prossima nota dopo</label>
+            <label class="field"><input id="wrong-limit" type="number" min="1" max="20" step="1" inputmode="numeric" value="3" disabled /> tentativi</label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Sequenza</legend>
+            <label class="choice"><input type="radio" name="mode" value="random" checked /> casuale, senza ripetizioni</label>
+            <label class="choice"><input type="radio" name="mode" value="preset" /> da una lista predefinita</label>
+            <label class="choice"><input type="radio" name="mode" value="list" /> dalla lista dell'insegnante</label>
+            <label class="field" id="preset-field" hidden><select id="preset" aria-label="lista predefinita"></select></label>
+
+            <div id="list-field" hidden>
+              <div id="keyboard" class="keyboard" role="group" aria-label="I tasti della lista dell'insegnante"></div>
+              <p id="list-count"></p>
+              <p id="list-message" role="status" hidden></p>
+              <div class="list-actions">
+                <button id="list-export" type="button" class="ghost">Esporta la lista</button>
+                <button id="list-import" type="button" class="ghost">Importa una lista</button>
+              </div>
+              <input id="list-file" type="file" accept="application/json,.json" hidden />
+            </div>
+          </fieldset>
+
+        </div>
+        <div class="actions">
+          <p id="settings-hint" class="hint" role="status" hidden></p>
+          <button id="begin" type="button">Comincia</button>
+        </div>
       </section>
 
       <section class="card" id="exercise" hidden>
-        <!-- One target and nothing else on the staff: the whole question. -->
-        <div id="target" class="sheet" role="img" aria-label="Un rigo con una nota da leggere"></div>
-        <p id="status" class="status">Premi Inizia, poi suona la nota che vedi.</p>
-        <p id="message" class="message" role="status" hidden></p>
-        <button id="start" type="button">Inizia</button>
-        <button id="pause" type="button" class="ghost" hidden>Pausa</button>
-        <button id="back" type="button" class="ghost">Cambia la prova</button>
+        <div class="scroll">
+          <!-- One target and nothing else on the staff: the whole question. -->
+          <div id="target" class="sheet" role="img" aria-label="Un rigo con una nota da leggere"></div>
+          <p id="status" class="status">Premi Inizia, poi suona la nota che vedi.</p>
+          <p id="message" class="message" role="status" hidden></p>
+        </div>
+        <div class="actions">
+          <button id="start" type="button">Inizia</button>
+          <button id="pause" type="button" class="ghost" hidden>Pausa</button>
+          <button id="back" type="button" class="ghost">Cambia la prova</button>
+        </div>
       </section>
 
       <section class="card" id="summary" hidden>
-        <h2>Sessione finita</h2>
-        <p id="summary-reason"></p>
-        <p id="summary-score" class="score"></p>
-        <p id="summary-rate" class="rate"></p>
+        <div class="scroll">
+          <h2>Esercizio concluso</h2>
+          <p id="summary-reason"></p>
+          <p id="summary-score" class="score"></p>
+          <p id="summary-rate" class="rate"></p>
 
-        <div id="wrong-group" hidden>
-          <h2>Sbagliate</h2>
-          <div id="wrong-notes" class="notes"></div>
+          <div id="wrong-group" hidden>
+            <h2>Sbagliate</h2>
+            <div id="wrong-notes" class="notes"></div>
+          </div>
+
+          <div id="skipped-group" hidden>
+            <h2>Saltate</h2>
+            <div id="skipped-notes" class="notes"></div>
+          </div>
+
+          <div id="log-group" hidden>
+            <p class="log-note">Il log della sessione: cosa è stato chiesto, cosa il microfono ha sentito, cosa ha deciso l'applicazione.</p>
+            <button id="log" type="button" class="ghost">Scarica il log</button>
+          </div>
+
+          <div id="board-group" hidden>
+            <h2>Classifica</h2>
+
+            <form id="name-form" class="name-form">
+              <label for="player-name">Come ti chiami?</label>
+              <div class="name-line">
+                <input id="player-name" type="text" maxlength="20" autocomplete="nickname"
+                       enterkeyhint="done" spellcheck="false" />
+                <button id="save-score" type="submit">Salva</button>
+              </div>
+            </form>
+
+            <p id="board-place" class="board-place" role="status" hidden></p>
+            <p id="board-empty" class="board-empty" hidden>
+              Nessun punteggio su questa prova: il primo nome è il tuo.
+            </p>
+            <ol id="board" class="board"></ol>
+            <p class="board-note">
+              La classifica resta su questo telefono: nomi e punteggi non escono da qui.
+            </p>
+          </div>
         </div>
-
-        <div id="skipped-group" hidden>
-          <h2>Saltate</h2>
-          <div id="skipped-notes" class="notes"></div>
+        <div class="actions">
+          <button id="restart" type="button">Torna all'inizio</button>
         </div>
-
-        <div id="log-group" hidden>
-          <p class="log-note">Il log della sessione: cosa è stato chiesto, cosa il microfono ha sentito, cosa ha deciso l'applicazione.</p>
-          <button id="log" type="button" class="ghost">Scarica il log</button>
-        </div>
-
-        <div id="board-group" hidden>
-          <h2>Classifica</h2>
-
-          <form id="name-form" class="name-form">
-            <label for="player-name">Come ti chiami?</label>
-            <div class="name-line">
-              <input id="player-name" type="text" maxlength="20" autocomplete="nickname"
-                     enterkeyhint="done" spellcheck="false" />
-              <button id="save-score" type="submit">Salva</button>
-            </div>
-          </form>
-
-          <p id="board-place" class="board-place" role="status" hidden></p>
-          <p id="board-empty" class="board-empty" hidden>
-            Nessun punteggio su questa prova: il primo nome è il tuo.
-          </p>
-          <ol id="board" class="board"></ol>
-          <p class="board-note">
-            La classifica resta su questo telefono: nomi e punteggi non escono da qui.
-          </p>
-        </div>
-
-        <button id="restart" type="button">Torna all'inizio</button>
       </section>
+    </main>
 
-      <details>
-        <summary>Strumenti di sviluppo</summary>
+    <footer class="app-foot">
+      <details class="tools">
+        <summary aria-label="Strumenti di sviluppo" title="Strumenti di sviluppo">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <ellipse cx="12" cy="13" rx="5.5" ry="7" />
+            <path d="M12 6v14" />
+            <path d="M7 9.7 3.4 8M17 9.7 21 8M6.5 13H2.6M17.5 13h3.9M7 16.6l-3.4 1.9M17 16.6l3.4 1.9" />
+            <path d="M9.6 6.2 8 3.6M14.4 6.2 16 3.6" />
+          </svg>
+        </summary>
         <ul>
-          <li><a href="/spike/ascolto.html">Lo spike dell'ascolto</a> — che nota sente il microfono, con quanta confidenza.</li>
+          <li><a href="/spike/ascolto.html">Lo spike del microfono</a> — che nota sente il microfono, con quanta confidenza.</li>
           <li><a href="/spike/dispari.html">Sonda 1 · parziali dispari</a> — se l'ottava sotto è stata suonata o risuona.</li>
           <li><a href="/spike/salita.html">Sonda 2 · salita delle bande</a> — se la banda dell'ottava sotto sale dopo quella della nota letta.</li>
         </ul>
       </details>
-    </main>
+    </footer>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

@@ -231,7 +231,7 @@ export function runProbe(definition: ProbeDefinition): void {
     // The attack starts a capture: the series is what both probes measure.
     if (onset.push(short, nowMs) && capture === null) {
       capture = [...preRoll];
-      status.textContent = 'colpo';
+      status.textContent = 'pressione';
     }
   }
 
@@ -276,9 +276,9 @@ export function runProbe(definition: ProbeDefinition): void {
     running = true;
     startButton.disabled = true;
     stopButton.disabled = false;
-    status.textContent = 'in ascolto';
+    status.textContent = 'microfono acceso';
     hint.textContent =
-      'Suona la nota di riferimento tre volte, staccando. Ogni colpo produce una riga: ' +
+      'Suona la nota di riferimento tre volte, staccando. Ogni pressione produce una riga: ' +
       'alla fine scarica il JSON.';
     window.requestAnimationFrame(frame);
   }
@@ -302,6 +302,8 @@ export function runProbe(definition: ProbeDefinition): void {
       generatedAt: new Date().toISOString(),
       device: { sampleRate: context?.sampleRate ?? 48000, userAgent: navigator.userAgent },
       settings: { fftSize: FFT_SIZE, shortSize: ONSET_WINDOW, frameMs: FRAME_MS, seriesFrames: SERIES_FRAMES },
+      // The archived measurement logs in the repository carry this key: renaming
+      // it would break joining a new round with rounds 1–5.
       colpi: log,
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });

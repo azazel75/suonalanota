@@ -6,7 +6,7 @@
  *
  * Synthetic signals, for the same reason as tests/detect.test.ts: a microphone
  * is not available to a test runner. What is checked here is the bookkeeping of
- * the listener — when a colpo is read, what it carries, what is kept out — and
+ * the listener — when a pressione is read, what it carries, what is kept out — and
  * not the acoustics, which are the spike's job.
  *
  * These tests also say the module has no page under it: they run in node, where
@@ -78,8 +78,8 @@ function arm(listener: Listener): void {
   feed(listener, silence(), 10, 0);
 }
 
-function colpiOf(frames: ListenerFrame[]) {
-  return frames.flatMap((frame) => frame.colpi);
+function pressioniOf(frames: ListenerFrame[]) {
+  return frames.flatMap((frame) => frame.pressioni);
 }
 
 describe('one frame of the microphone', () => {
@@ -119,57 +119,57 @@ describe('the listener', () => {
     expect(attack.struck).toBe(true);
     expect(attack.reading).toBe(true);
     // The long window is still filling with the silence before the attack.
-    expect(attack.colpi).toHaveLength(0);
+    expect(attack.pressioni).toHaveLength(0);
 
     const later = feed(listener, tone, 5, 440);
-    const colpi = colpiOf(later);
-    expect(colpi).toHaveLength(1);
-    expect(colpi[0].midi).toBe(A4);
-    expect(colpi[0].at).toBe(400);
-    expect(colpi[0].credibility).toBeGreaterThan(1);
-    expect(colpi[0].levelDb).toBeLessThan(0);
-    expect(colpi[0].levelDb).toBeGreaterThan(DB_FLOOR);
+    const pressioni = pressioniOf(later);
+    expect(pressioni).toHaveLength(1);
+    expect(pressioni[0].midi).toBe(A4);
+    expect(pressioni[0].at).toBe(400);
+    expect(pressioni[0].credibility).toBeGreaterThan(1);
+    expect(pressioni[0].levelDb).toBeLessThan(0);
+    expect(pressioni[0].levelDb).toBeGreaterThan(DB_FLOOR);
   });
 
-  test('a key held down is one colpo, not one per frame', () => {
+  test('a key held down is one pressione, not one per frame', () => {
     const listener = createListener();
     arm(listener);
     const tone = synthesise(pianoTone(A4));
     listener.push(tone, SAMPLE_RATE, 400);
-    expect(colpiOf(feed(listener, tone, 25, 440))).toHaveLength(1);
+    expect(pressioniOf(feed(listener, tone, 25, 440))).toHaveLength(1);
   });
 
-  test('below the gate a colpo is noise and does not enter', () => {
+  test('below the gate a pressione is noise and does not enter', () => {
     const listener = createListener({ minCredibility: 1e9 });
     arm(listener);
     const tone = synthesise(pianoTone(A4));
     listener.push(tone, SAMPLE_RATE, 400);
-    expect(colpiOf(feed(listener, tone, 5, 440))).toHaveLength(0);
+    expect(pressioniOf(feed(listener, tone, 5, 440))).toHaveLength(0);
 
     // The measure button is a deliberate act: it does not ask the gate.
-    const colpo = listener.capture(600);
-    expect(colpo).not.toBeNull();
-    expect(colpo?.midi).toBe(A4);
-    expect(colpo?.credibility).toBeLessThan(1e9);
+    const pressione = listener.capture(600);
+    expect(pressione).not.toBeNull();
+    expect(pressione?.midi).toBe(A4);
+    expect(pressione?.credibility).toBeLessThan(1e9);
   });
 
   test('there is nothing to capture before the first frame', () => {
     expect(createListener().capture(0)).toBeNull();
   });
 
-  test('a colpo keeps a key the exercise range allows, and no other', () => {
+  test('a pressione keeps a key the exercise range allows, and no other', () => {
     const listener = createListener({ lowMidi: 48, highMidi: 72 });
     arm(listener);
     const tone = synthesise(pianoTone(30));
     listener.push(tone, SAMPLE_RATE, 400);
-    const colpi = colpiOf(feed(listener, tone, 5, 440));
+    const pressioni = pressioniOf(feed(listener, tone, 5, 440));
 
-    expect(colpi).toHaveLength(1);
-    expect(colpi[0].midi).toBeGreaterThanOrEqual(48);
-    expect(colpi[0].midi).toBeLessThanOrEqual(72);
+    expect(pressioni).toHaveLength(1);
+    expect(pressioni[0].midi).toBeGreaterThanOrEqual(48);
+    expect(pressioni[0].midi).toBeLessThanOrEqual(72);
   });
 
-  test('dropping a pending colpo means nothing of the old sound is judged', () => {
+  test('dropping a pending pressione means nothing of the old sound is judged', () => {
     const listener = createListener();
     arm(listener);
     const tone = synthesise(pianoTone(A4));
@@ -178,7 +178,7 @@ describe('the listener', () => {
 
     listener.clearPending();
     expect(listener.pending).toBe(false);
-    expect(colpiOf(feed(listener, tone, 5, 440))).toHaveLength(0);
+    expect(pressioniOf(feed(listener, tone, 5, 440))).toHaveLength(0);
   });
 
   test('a new range is a new search: the onset and the stability start over', () => {

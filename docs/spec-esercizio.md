@@ -13,15 +13,15 @@ L'altezza richiesta è **esatta**: l'ottava fa parte della risposta.
 
 ## Durata
 
-Sessione di 60 secondi, configurabile. L'orologio parte quando appare il primo bersaglio. Una pausa
-esiste ma non consuma tempo. La sessione finisce quando scade il tempo **o** quando la lista dei
-bersagli è esaurita, e il riepilogo dice quale delle due.
+Sessione di 60 secondi, configurabile. Il tempo parte quando appare la prima nota. Una pausa
+esiste ma non consuma tempo. La sessione finisce quando scade il tempo **o** quando la lista delle
+note è esaurita, e il riepilogo dice quale delle due.
 
 ## Intervallo delle note
 
-Due preset, entrambi configurabili come minimo e massimo:
+Due intervalli, entrambi configurabili come minimo e massimo:
 
-| preset | estensione | MIDI |
+| intervallo | estensione | MIDI |
 | --- | --- | --- |
 | **base** | Do3 – Do5 | 48 – 72 |
 | **avanzato** | Si1 – Re6 | 35 – 86 |
@@ -51,44 +51,44 @@ arrivasse a Do3 l'avanzato coinciderebbe col base. Non è un difetto della misur
 
 ## Chiavi
 
-Le due chiavi convivono nella stessa sessione, di default. Ogni bersaglio si disegna nella chiave che
-lo lascia **più vicino al rigo**: i bassi in chiave di basso, gli acuti in chiave di violino. Il **Do
+Le due chiavi convivono nella stessa sessione, di default. Ogni nota si disegna nella chiave che
+la lascia **più vicina al rigo**: i bassi in chiave di basso, gli acuti in chiave di violino. Il **Do
 centrale** è l'unica nota in cui le due scritture sono equivalenti — un taglio sopra il basso, un
 taglio sotto il violino — e alterna fra le due.
 
 Una modalità separata ("la stessa nota nelle due chiavi, una battuta per chiave") resta possibile e
 sarà un esercizio a sé: non è questa.
 
-## Sequenza dei bersagli
+## Sequenza delle note
 
 Tre modi, scelti prima di iniziare:
 
 - **casuale** nell'intervallo attivo, senza ripetizione di una nota già uscita nella sequenza;
-- **preset** progressivi, forniti con l'applicazione;
-- **lista** preparata dalla maestra, modificabile in-app e esportabile come JSON.
+- **liste predefinite** progressive, fornite con l'applicazione;
+- **lista** preparata dall'insegnante, modificabile in-app e esportabile come JSON.
 
 ## Verdetti e limiti
 
-Il verdetto di un bersaglio è **corretta**, **sbagliata** o **saltata** (matrice di ADR 0003,
-aggiornata da ADR 0008). Ma prima del verdetto c'è un caso che verdetto non è: il **colpo ambiguo**,
-quello in cui la nota vincente e la sua ottava stanno a meno di 3 dB e il rilevatore non può
-scegliere. Un colpo ambiguo **non costa un tentativo**: l'applicazione chiede di ripetere la nota,
-perché l'ottava fa parte della risposta e indovinare sarebbe peggio che chiedere.
+Il verdetto di una nota è **corretta**, **sbagliata** o **saltata** (matrice di ADR 0003,
+aggiornata da ADR 0008). Ma prima del verdetto c'è un caso che verdetto non è: la **pressione
+ambigua**, quella in cui la nota vincente e la sua ottava stanno a meno di 3 dB e il rilevatore non
+può scegliere. Una pressione ambigua **non costa un tentativo**: l'applicazione chiede di ripetere la
+nota, perché l'ottava fa parte della risposta e indovinare sarebbe peggio che chiedere.
 
-Limiti, di default: **8 secondi per bersaglio**, e nessun tetto ai colpi nel frattempo — un tetto ai
-colpi errati esiste, è configurabile e di default è spento.
+Limiti, di default: **8 secondi per nota**, e nessun limite ai tentativi nel frattempo — un numero
+massimo di tentativi esiste, è configurabile e di default è spento.
 
 | evento | verdetto |
 | --- | --- |
-| un colpo contiene l'altezza esatta del bersaglio | corretta |
-| tempo scaduto, con almeno un colpo errato non ambiguo | sbagliata |
-| tempo scaduto, con soli colpi ambigui o senza colpi | saltata |
-| tetto dei colpi errati raggiunto (se configurato) | sbagliata |
-| la sessione finisce con il bersaglio a schermo | non conteggiata |
+| una pressione contiene l'altezza esatta della nota | corretta |
+| tempo scaduto, con almeno una pressione errata non ambigua | sbagliata |
+| tempo scaduto, con sole pressioni ambigue o senza pressioni | saltata |
+| numero massimo di tentativi raggiunto (se configurato) | sbagliata |
+| la sessione finisce con la nota a schermo | non conteggiata |
 
 Nessun suono di riferimento viene emesso durante l'esercizio: il feedback sonoro è un beep neutro,
-quello visivo un lampeggio verde sulla corretta, rosso sull'errore, e per un colpo ambiguo nessuno
-dei due — solo l'invito a ripetere.
+quello visivo un lampeggio verde sulla corretta, rosso sull'errore, e per una pressione ambigua
+nessuno dei due — solo l'invito a ripetere.
 
 
 ## Soundcheck
@@ -119,7 +119,7 @@ sbagliate. Durante la sessione un contatore discreto, non un HUD.
 
 **Requisito** (confermato da Emilia).
 
-- **Una riga per ragazzə**, non un elenco di tentativi: si tiene il run col punteggio migliore di
+- **Una riga per ragazzə**, non un elenco di sessioni: si tiene quella col punteggio migliore di
   quel nickname. Un ragazzə che gioca cinque volte compare una volta, con la sua prova migliore.
 - Ordine: corrette, poi note al minuto, poi la data più recente.
 - **Nickname**: chiesto alla fine di ogni esercizio, con dentro il nome dell'ultimo run — chi ha già
@@ -132,14 +132,15 @@ sbagliate. Durante la sessione un contatore discreto, non un HUD.
 
 ## Le impostazioni si scelgono una volta
 
-Durata, intervallo, timeout per bersaglio, tetto ai colpi e modalità (casuale, preset, lista) si impostano
+Durata, intervallo, tempo per nota, numero massimo di tentativi e modalità (casuale, lista
+predefinita, lista dell'insegnante) si impostano
 **prima** della sessione e durante la sessione non si toccano: cambiarle vorrebbe dire cambiare la
 prova a metà, e il punteggio perderebbe senso.
 
 ## Log
 
-Ogni sessione produce un log scaricabile in JSON: bersaglio, altezza misurata, verdetto, istanti,
-impostazioni in vigore. Serve alla maestra per distinguere "il ragazzə sbaglia" da "l'applicazione
+Ogni sessione produce un log scaricabile in JSON: nota, altezza misurata, verdetto, istanti,
+impostazioni in vigore. Serve all'insegnante per distinguere "il ragazzə sbaglia" da "l'applicazione
 sbaglia".
 
 ## Non ancora deciso
@@ -149,5 +150,5 @@ sbaglia".
   accessibili. La previsione da falsificare è "acuti meglio, grave peggio" sulle tastiere
   elettroniche; il dato della mezza coda a coperchio chiuso non descrive nessuno dei due casi.
 - Le due sonde dell'ottava (parziali dispari, salita delle bande) sono pronte e aspettano il
-  pianoforte: se una delle due funziona, il colpo ambiguo si dirada e le ripetizioni diminuiscono.
+  pianoforte: se una delle due funziona, la pressione ambigua si dirada e le ripetizioni diminuiscono.
 

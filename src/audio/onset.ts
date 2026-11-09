@@ -4,7 +4,7 @@
  * :Author:   Alberto Berti <alberto@metapensiero.it>
  * :License:  GNU General Public License version 3 or later
  *
- * A colpo is an attack: the harmonic sum says *which* key sounds, this says
+ * A pressione is an attack: the harmonic sum says *which* key sounds, this says
  * *when it started sounding*. Without it a held key would answer every target
  * and two identical notes in a row would count as one.
  *
@@ -14,7 +14,7 @@
  * firing, the detector stays disarmed until the flux falls back below half the
  * threshold. Without that, a single attack on a decaying, beating piano tone
  * re-triggers every `cooldown + hop`: the first spike measured gaps of 133 and
- * 150 ms against a 120 ms cooldown and a 40 ms hop, and up to eleven colpi for
+ * 150 ms against a 120 ms cooldown and a 40 ms hop, and up to eleven pressioni for
  * three presses.
  *
  * This module sees the *attack* spectrum: a short window (2048 samples), not the

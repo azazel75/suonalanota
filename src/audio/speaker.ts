@@ -4,13 +4,13 @@
  * :Author:   Alberto Berti <alberto@metapensiero.it>
  * :License:  GNU General Public License version 3 or later
  *
- * A colpo is judged by a colour and by this: one short neutral tone, the same
+ * A pressione is judged by a colour and by this: one short neutral tone, the same
  * for a right key and a wrong one. The exercise never plays the note it asks
  * for — that would be the answer — and it never lets the sound say what the
  * colour says, or the ear would learn the exercise instead of the staff.
  *
  * The tone is deliberately quiet: it comes out of the same phone that is
- * listening, and the page drops the colpi it produces (see main.ts).
+ * listening, and the page drops the pressioni it produces (see main.ts).
  */
 
 /** 660 Hz, an E: inside the exercise range, and no easier to mistake for a note. */

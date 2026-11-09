@@ -31,7 +31,7 @@
  * calibrated on two dedicated probes and separated the two cases cleanly
  * (docs/adr/0009). Where the evidence falls inside the measured overlap the
  * detector still guesses — it has to name a note — but the exercise does not
- * judge that colpo: it asks the player to repeat it.
+ * judge that pressione: it asks the player to repeat it.
  */
 import { HIGHEST_MIDI, LOWEST_MIDI, midiToHz, pitchClass } from './notes';
 
@@ -47,7 +47,7 @@ export const OCTAVE_TIE_DB = 6;
 /**
  * Below this margin the winner and its octave are not distinguishable by this
  * detector at all — measured on a grand piano, every octave error sat between 0.5
- * and 3.3 dB — so the colpo is **ambiguous**: it must not be judged, the player is
+ * and 3.3 dB — so the pressione is **ambiguous**: it must not be judged, the player is
  * asked to play it again. Guessing here is what makes an exercise unfair.
  */
 export const OCTAVE_AMBIGUITY_DB = 3;
@@ -103,7 +103,7 @@ export interface DetectionOptions {
   lowMidi?: number;
   /** Highest key the exercise can ask for. */
   highMidi?: number;
-  /** When false the octave rule is skipped: the colpo is then always judged as it lands. */
+  /** When false the octave rule is skipped: the pressione is then always judged as it lands. */
   octaveEvidence?: boolean;
 }
 
@@ -156,7 +156,7 @@ export function binWidth(sampleRate: number, magnitudes: Float32Array): number {
  * region: the denominator goes to zero, the offset reaches tens of bins, and the
  * "peak" is reported both at an absurd frequency (182 Hz for a 116 Hz note) and
  * at an inflated amplitude — which is how room noise used to clear the gate and
- * become a colpo. Measured, not imagined: the second spike log is full of them.
+ * become a pressione. Measured, not imagined: the second spike log is full of them.
  */
 export function peakAt(magnitudes: Float32Array, bin: number, radius = 1): Peak {
   const centre = Math.round(bin);

@@ -5,7 +5,7 @@
  * :License:  GNU General Public License version 3 or later
  *
  * The teacher's list: the keys a session asks for, in the order she ticked
- * them. It is the only thing a maestra types and then hands to another person,
+ * them. It is the only thing a teacher types and then hands to another person,
  * so it has to outlive the page and to survive a file that is not ours.
  *
  * Four decisions, and why:
@@ -93,17 +93,17 @@ export function listFromJson(text: string): ListImport {
   try {
     parsed = JSON.parse(text);
   } catch {
-    return { kind: 'invalid', message: 'Il file non è una lista della maestra: non è un JSON.' };
+    return { kind: 'invalid', message: "Il file non è una lista dell'insegnante: non è un JSON." };
   }
 
   const file = asObject(parsed);
   if (file === null) {
-    return { kind: 'invalid', message: 'Il file non è una lista della maestra: sembra un altro file.' };
+    return { kind: 'invalid', message: "Il file non è una lista dell'insegnante: sembra un altro file." };
   }
 
   const version = file.versione;
   if (version === undefined) {
-    return { kind: 'invalid', message: 'Il file non è una lista della maestra: manca la versione.' };
+    return { kind: 'invalid', message: "Il file non è una lista dell'insegnante: manca la versione." };
   }
   if (version !== LIST_VERSION) {
     return {
@@ -114,7 +114,7 @@ export function listFromJson(text: string): ListImport {
 
   const raw = file.tasti;
   if (!Array.isArray(raw) || !raw.every((key) => Number.isInteger(key))) {
-    return { kind: 'invalid', message: 'Il file non è una lista della maestra: «tasti» deve essere un elenco di numeri interi.' };
+    return { kind: 'invalid', message: "Il file non è una lista dell'insegnante: «tasti» deve essere un elenco di numeri interi." };
   }
 
   const keys: number[] = [];

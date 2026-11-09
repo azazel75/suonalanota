@@ -15,7 +15,7 @@ import { describe, expect, it } from 'vitest';
 import {
   PROBES,
   createSoundcheck,
-  type SoundcheckColpo,
+  type SoundcheckPressione,
   type SoundcheckOptions,
 } from '../src/exercise/soundcheck';
 import { PORTATA_VERSION } from '../src/exercise/portata';
@@ -25,18 +25,18 @@ const WHEN = new Date('2026-11-09T10:00:00.000Z');
 /** Six seconds per note is the ticket's thirty seconds, once the microphone is open. */
 const TIMEOUT = 6_000;
 
-/** A microphone frame with a level and, sometimes, the colpi it completed. */
-function frame(levelDb: number, colpi: readonly SoundcheckColpo[] = []) {
-  return { levelDb, colpi };
+/** A microphone frame with a level and, sometimes, the pressioni it completed. */
+function frame(levelDb: number, pressioni: readonly SoundcheckPressione[] = []) {
+  return { levelDb, pressioni };
 }
 
-/** A colpo the detector was sure of. */
-function heard(midi: number): SoundcheckColpo {
+/** A pressione the detector was sure of. */
+function heard(midi: number): SoundcheckPressione {
   return { midi, ambiguous: false };
 }
 
-/** A colpo whose octave the detector could not decide. */
-function ambiguous(midi: number): SoundcheckColpo {
+/** A pressione whose octave the detector could not decide. */
+function ambiguous(midi: number): SoundcheckPressione {
   return { midi, ambiguous: true };
 }
 
@@ -100,7 +100,7 @@ describe('the five probes', () => {
 });
 
 describe('what one probe can produce', () => {
-  it('records the key a credible colpo named', () => {
+  it('records the key a credible pressione named', () => {
     const check = soundcheck();
     play(check, 36, 100);
     expect(check.snapshot().heard.get('basso')).toBe(36);
@@ -118,7 +118,7 @@ describe('what one probe can produce', () => {
     expect(check.snapshot().portata?.sente.highest).toBe(84);
   });
 
-  it('gives up on a key after three ambiguous colpi in a row', () => {
+  it('gives up on a key after three ambiguous pressioni in a row', () => {
     const check = soundcheck();
     check.feed(100, frame(-20, [ambiguous(36)]));
     check.feed(200, frame(-20, [ambiguous(36)]));
@@ -137,7 +137,7 @@ describe('what one probe can produce', () => {
     expect(check.snapshot().heard.get('basso')).toBe(36);
   });
 
-  it('does not give up on a key whose ambiguous colpi were not consecutive', () => {
+  it('does not give up on a key whose ambiguous pressioni were not consecutive', () => {
     const check = soundcheck();
     check.feed(100, frame(-20, [ambiguous(36)]));
     check.feed(200, frame(-20, [ambiguous(48)]));

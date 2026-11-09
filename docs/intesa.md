@@ -14,9 +14,11 @@ l'esercizio, niente backend, niente dati che escono dal dispositivo.
 
 ## Le parole
 
-- **Bersaglio** — la nota scritta da eseguire. **Tasto** — quello che si preme, un numero MIDI.
-- **Colpo** — un attacco riconosciuto dal microfono, con l'altezza che contiene.
-- **Colpo ambiguo** — un colpo in cui la nota e la sua ottava restano indistinguibili: pareggio entro
+- **Nota** — il segno scritto sul rigo da leggere; la sessione ne chiede una alla volta. **Tasto** —
+  quello che si preme, un numero MIDI.
+- **Pressione** — ciò che il microfono riconosce quando si preme un tasto: un attacco, con l'altezza
+  che contiene. **Tentativo** — una pressione che non contiene la nota chiesta.
+- **Pressione ambigua** — una pressione in cui la nota e la sua ottava restano indistinguibili: pareggio entro
   3 dB *e* evidenza delle parziali dispari dentro la banda 0,2–0,4, oppure evidenza non calcolabile.
   Non si giudica, si chiede di ripetere, e non costa un tentativo.
 - **Verdetto** — corretta, sbagliata, saltata. Tre valori, non due.
@@ -26,30 +28,30 @@ l'esercizio, niente backend, niente dati che escono dal dispositivo.
 |                    |                                                                            |
 |--------------------|----------------------------------------------------------------------------|
 | durata sessione    | 60 s, configurabile; la pausa non conta                                    |
-| per bersaglio      | 8 s; colpi liberi fino allo scadere; tetto ai colpi configurabile e spento |
+| per nota           | 8 s; tentativi liberi fino allo scadere; numero massimo configurabile e spento |
 | intervallo base     | Do3–Do5 (48–72)                                                            |
 | intervallo avanzato | Si1–Re6 (35–86)                                                            |
 | chiavi             | entrambe nella stessa sessione, di default                                 |
 | chiave di una nota | quella che la lascia più vicina al rigo; il Do centrale alterna            |
 | tagli addizionali  | si disegnano, senza avvisi                                                 |
-| sequenza           | casuale senza ripetizioni, preset, lista della maestra (editor + JSON)     |
-| schermate          | configurazione (la prima), ascolto a richiesta, esercizio, riepilogo       |
+| sequenza           | casuale senza ripetizioni, lista predefinita, lista dell'insegnante (editor + JSON) |
+| schermate          | configurazione (la prima), misura della sensibilità a richiesta, esercizio, riepilogo |
 | classifica         | locale, nickname facoltativo                                               |
 | distribuzione      | PWA installabile, funzionante offline, cartella statica                    |
 
-## L'ascolto
+## Il microfono
 
 Solo microfono: il pianoforte acustico e iPad escludono il MIDI, e il caso d'uso è quello.
 
 - due finestre: **2048 campioni** per l'attacco, **16384** (341 ms) per l'altezza;
-- l'attacco è un **isteresi** (un colpo per salita), non un cooldown;
+- l'attacco è un **isteresi** (una pressione per salita), non un cooldown;
 - l'altezza si legge **150 ms dopo** l'attacco, quando la finestra lunga si è riempita;
 - la ricerca è limitata all'**intervallo dell'esercizio**, mai tutti gli 88 tasti;
-- un colpo entra solo se la nota vince **≥ 4 volte** sulla mediana dei candidati (credibilità: numero
+- una pressione entra solo se la nota vince **≥ 4 volte** sulla mediana dei candidati (credibilità: numero
   puro, non dipende dal volume del telefono);
 - l'ottava si decide con le **parziali dispari** dell'ottava sotto: una corda premuta le ha, una che
   risuona no (0,32–0,60 contro ≤ 0,21, misurato);
-- se l'evidenza cade nella banda **0,2–0,4** — o non è calcolabile — il colpo è ambiguo: non si
+- se l'evidenza cade nella banda **0,2–0,4** — o non è calcolabile — la pressione è ambigua: non si
   giudica, si chiede di ripetere;
 - il **soundcheck** misura l'estensione dello strumento e la portata udibile del dispositivo, e può
   solo restringere l'intervallo.
@@ -62,15 +64,15 @@ Su un mezza coda Yamaha, coperchio chiuso, telefono Android di fascia media, mic
 |----------------|------------------------------------------------------|
 | sotto Mi2      | inutilizzabile (14-17%): lo esclude il soundcheck    |
 | Mi2–Si2        | 85-95%                                               |
-| Do3–Do5 (base) | 84% severo, **92%** contando a parte i colpi ambigui |
+| Do3–Do5 (base) | 84% severo, **92%** contando a parte le pressioni ambigue |
 | Do#5–Re6       | 85-100%                                              |
 
-Nessuna nota inventata fuori dall'intervallo; colpi duplicati scesi dal 11% all'1-3%; frequenza misurata
-registrata per ogni colpo, così un errore del rilevatore si distingue da un errore dell'allievə.
+Nessuna nota inventata fuori dall'intervallo; pressioni duplicate scese dall'11% all'1-3%; frequenza misurata
+registrata per ogni pressione, così un errore del rilevatore si distingue da un errore dell'allievə.
 
 ## Cosa non sappiamo
 
-- **L'ottava** è decisa dalle parziali dispari su una sessantina di colpi di un solo strumento: è il
+- **L'ottava** è decisa dalle parziali dispari su una sessantina di pressioni di un solo strumento: è il
   criterio migliore che abbiamo, non una certezza. La sonda del tempo di salita
   (`/spike/salita.html`) non discrimina e resta nel repository come negativo documentato.
 - **Verticale e tastiera elettronica**: mai misurati. La previsione è "acuti meglio, grave peggio"

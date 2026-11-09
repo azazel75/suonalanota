@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="dark" />
-    <title>Suona la nota — spike ascolto</title>
+    <title>Suona la nota — spike microfono</title>
     <style>
       :root {
         --bg: #0b0f14;
@@ -68,7 +68,7 @@
   </head>
   <body>
     <header>
-      <h1>Spike · ascolto dal microfono</h1>
+      <h1>Spike · che nota sente il microfono</h1>
       <span id="status" class="badge off">spento</span>
     </header>
 
@@ -144,7 +144,7 @@
         <select id="range-notes"></select>
       </div>
       <p class="hint">
-        Il rilevatore cerca <b>solo</b> dentro questo range: fuori non esiste candidato, e un colpo
+        Il rilevatore cerca <b>solo</b> dentro questo range: fuori non esiste candidato, e una pressione
         di tocco non può più inventarsi un Do1. Per confrontare con il primo giro scegli "tutto il
         pianoforte".
       </p>
@@ -159,7 +159,7 @@
         <input id="gate" type="range" min="1" max="10" step="0.5" value="4" style="flex: 1; min-width: 160px" />
       </div>
       <p class="hint">
-        Un colpo conta solo se la nota vince di almeno questo fattore sulla mediana di tutti i
+        Una pressione conta solo se la nota vince di almeno questo fattore sulla mediana di tutti i
         candidati: è un numero puro, quindi non cambia col volume del telefono. Sotto 4 si registra
         anche il rumore della stanza; sopra 6 si perdono le note suonate piano.
       </p>
@@ -168,10 +168,10 @@
     <section class="card">
       <h2>Conteggi</h2>
       <div class="facts" id="counters">
-        <span>colpi</span><b>0</b>
+        <span>pressioni</span><b>0</b>
       </div>
       <table style="margin-top: 10px">
-        <thead><tr><th>riferimento</th><th class="num">colpi</th><th class="num">giusti</th><th class="num">ottave</th><th class="num">altri</th></tr></thead>
+        <thead><tr><th>riferimento</th><th class="num">pressioni</th><th class="num">giusti</th><th class="num">ottave</th><th class="num">altri</th></tr></thead>
         <tbody id="ref-table"></tbody>
       </table>
     </section>

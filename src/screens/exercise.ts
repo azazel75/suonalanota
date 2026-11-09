@@ -14,7 +14,7 @@
  *  - the microphone is opened on the button, because that is the only gesture
  *    the browser accepts;
  *  - the tone the application makes is heard by its own microphone for a few
- *    hundred milliseconds, and the colpi it produces are dropped: they are the
+ *    hundred milliseconds, and the pressioni it produces are dropped: they are the
  *    phone talking to itself;
  *  - a tab that is not watched is not a session being played, so going to the
  *    background pauses it instead of burning a minute of targets;
@@ -75,7 +75,7 @@ interface Running {
   settings: Settings;
   /** The measurement in force when the session started, kept for the log. */
   portata: Portata | null;
-  /** Until this instant the colpi the microphone hears are the beep coming back. */
+  /** Until this instant the pressioni the microphone hears are the beep coming back. */
   muteUntil: number;
 }
 
@@ -107,7 +107,7 @@ export function createExerciseScreen(ports: ExercisePorts): ExerciseScreen {
   function flash(verdict: Verdict): void {
     const kind = verdict === 'centered' ? 'flash-good' : 'flash-bad';
     sheet.classList.remove('flash-good', 'flash-bad');
-    // Restart the animation even when two colpi land back to back.
+    // Restart the animation even when two pressioni land back to back.
     void sheet.offsetWidth;
     sheet.classList.add(kind);
     if (flashTimer !== null) window.clearTimeout(flashTimer);
@@ -219,11 +219,11 @@ export function createExerciseScreen(ports: ExercisePorts): ExerciseScreen {
         if (current === null) return;
         const frame = listener.push(samples, sampleRate, now);
         // The beep leaves this phone's speaker and comes back into its
-        // microphone: what it produces is not the allievə's colpo.
+        // microphone: what it produces is not the allievə's pressione.
         current.exercise.feed({
           at: now,
           levelDb: frame.levelDb,
-          colpi: now < current.muteUntil ? [] : frame.colpi,
+          pressioni: now < current.muteUntil ? [] : frame.pressioni,
         });
       });
     } catch (error) {

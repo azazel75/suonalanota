@@ -125,7 +125,7 @@ describe('the settings of the trial', () => {
 
     const nothing = settings({ mode: 'preset', presetId: 'rigo-di-basso', range: { lowest: 60, highest: 72 } });
     expect(sequenceFor(nothing)).toEqual([]);
-    expect(problemWith(nothing)).toContain('range');
+    expect(problemWith(nothing)).toContain("nell'intervallo");
   });
 
   it('plays the list in the order it was composed, dropping what is out of range', () => {
@@ -138,7 +138,7 @@ describe('the settings of the trial', () => {
   it('does not call a list empty when it is only out of the range in force', () => {
     const outside = settings({ mode: 'list', list: [90, 91], range: { lowest: 48, highest: 72 } });
 
-    expect(problemWith(outside)).toContain('range');
+    expect(problemWith(outside)).toContain("nell'intervallo");
     expect(problemWith(outside)).not.toContain('vuota');
   });
 });
@@ -204,7 +204,7 @@ describe('the trial from the URL', () => {
   });
 
   it('lets the soundcheck be required without skipping the trial it is asked from', () => {
-    // `?soundcheck=1` opens the configuration and, from there, the ascolto; it
+    // `?soundcheck=1` opens the configuration and, from there, the device sensitivity; it
     // is not a trial parameter, and treating it as one would skip the very
     // screen it lives on.
     expect(settingsFromQuery(params('soundcheck=1')).skipSetup).toBe(false);

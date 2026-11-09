@@ -7,7 +7,7 @@
  * Permission, the audio context, the analyser and the loop that takes one
  * buffer 25 times a second: everything the application needs from the browser
  * to listen, and nothing about what it hears. The listener in ../audio turns
- * the buffers into colpi.
+ * the buffers into pressioni.
  *
  * The window is the one the pitch needs (16384 samples, 341 ms at 48 kHz), and
  * the processing the browser would add by default — echo cancellation, noise

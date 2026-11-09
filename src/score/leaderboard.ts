@@ -21,7 +21,7 @@
  *  - **the key of a board is the trial**: range, duration, target timeout, cap
  *    and mode (`trialKey`). A twenty-notes-a-minute score on the base range and
  *    an eight on the advanced one are not two numbers of the same thing. The
- *    preset and the teacher's list are **not** in the key: the ticket names
+ *    predefined list and the teacher's list are **not** in the key: the ticket names
  *    five fields, and two lists of notes are not two exercises in the sense a
  *    score is compared in.
  *  - **one storage document per trial**, under a key that carries the trial, so
@@ -29,7 +29,7 @@
  *    on that phone. The document is versioned, like the two files of ADR 0012,
  *    and a version we do not know is refused rather than read on a guess.
  *  - **`when` is a number of milliseconds, not an ISO string.** The two files
- *    of ADR 0012 travel to a maestra who reads them; a leaderboard never leaves
+ *    of ADR 0012 travel to a teacher who reads them; a leaderboard never leaves
  *    the device, so the instant only has to sort and to survive a round trip,
  *    and an integer does both without parsing a date that could be wrong.
  *

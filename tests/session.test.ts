@@ -7,7 +7,7 @@
  * The engine's only seam: a sequence of targets and a sequence of events in,
  * verdicts and counts out. No DOM, no audio, no real timer — `tick` is the clock.
  * One test per row of the matrix of ADR 0003 (as updated by ADR 0008), then the
- * cases around it: the ambiguous colpo, the pause, the cap, the end of the
+ * cases around it: the ambiguous pressione, the pause, the cap, the end of the
  * session, the score.
  */
 import { describe, expect, test } from 'vitest';
@@ -27,19 +27,19 @@ function verdicts(session: Session): Verdict[] {
 }
 
 describe('the verdict matrix', () => {
-  test('a colpo that contains the target key closes the target as centered', () => {
+  test('a pressione that contains the target key closes the target as centered', () => {
     const session = createSession([MIDDLE_C]);
     expect(session.hit(MIDDLE_C)).toEqual({ kind: 'verdict', verdict: 'centered' });
     expect(verdicts(session)).toEqual(['centered']);
   });
 
-  test('a colpo that contains the target among other keys is still centered', () => {
+  test('a pressione that contains the target among other keys is still centered', () => {
     const session = createSession([MIDDLE_C]);
     expect(session.hit([E4, MIDDLE_C, G4])).toEqual({ kind: 'verdict', verdict: 'centered' });
     expect(verdicts(session)).toEqual(['centered']);
   });
 
-  test('a wrong colpo leaves the target on screen and costs a try', () => {
+  test('a wrong pressione leaves the target on screen and costs a try', () => {
     const session = createSession([MIDDLE_C]);
     expect(session.hit(D4)).toEqual({ kind: 'wrong' });
 
@@ -57,7 +57,7 @@ describe('the verdict matrix', () => {
     expect(session.state().current?.key).toBe(E4);
   });
 
-  test('with the cap off a wrong colpo never closes the target', () => {
+  test('with the cap off a wrong pressione never closes the target', () => {
     const session = createSession([MIDDLE_C]);
     for (let attempt = 0; attempt < 20; attempt++) {
       expect(session.hit(D4)).toEqual({ kind: 'wrong' });
@@ -66,7 +66,7 @@ describe('the verdict matrix', () => {
     expect(session.state().results).toHaveLength(0);
   });
 
-  test('the clock closes the target as wrong when there was a wrong colpo', () => {
+  test('the clock closes the target as wrong when there was a wrong pressione', () => {
     const session = createSession([MIDDLE_C, E4]);
     session.hit(D4);
     session.tick(DEFAULT_TARGET_TIMEOUT_MS);
@@ -84,7 +84,7 @@ describe('the verdict matrix', () => {
     expect(session.state().results[0].wrongHits).toBe(0);
   });
 
-  test('the clock closes a target with only ambiguous colpi as skipped', () => {
+  test('the clock closes a target with only ambiguous pressioni as skipped', () => {
     const session = createSession([MIDDLE_C, E4]);
     session.hit(MIDDLE_C, true);
     session.hit(MIDDLE_C, true);
@@ -115,8 +115,8 @@ describe('the verdict matrix', () => {
   });
 });
 
-describe('the ambiguous colpo', () => {
-  test('produces no verdict even when the colpo contains the target key', () => {
+describe('the ambiguous pressione', () => {
+  test('produces no verdict even when the pressione contains the target key', () => {
     const session = createSession([MIDDLE_C]);
     expect(session.hit(MIDDLE_C, true)).toEqual({ kind: 'ambiguous' });
     expect(session.state().results).toHaveLength(0);
@@ -182,7 +182,7 @@ describe('the pause', () => {
     expect(verdicts(session)).toEqual(['centered', 'wrong']);
   });
 
-  test('a colpo while paused is not judged', () => {
+  test('a pressione while paused is not judged', () => {
     const session = createSession([MIDDLE_C]);
     session.pause();
 
@@ -267,7 +267,7 @@ describe('the end of the session', () => {
     expect(state.endReason).toBe('duration');
   });
 
-  test('the wrong colpi of one target do not carry over to the next', () => {
+  test('the wrong pressioni of one target do not carry over to the next', () => {
     const session = createSession([MIDDLE_C, E4]);
     session.hit(D4);
     session.hit(D4);
@@ -318,7 +318,7 @@ describe('the score', () => {
     const session = createSession([MIDDLE_C, D4, E4, F4, G4], { targetTimeoutMs: 4000 });
     session.hit(MIDDLE_C); // centered, at once
     session.tick(4000); // D4 skipped
-    session.hit(66); // a wrong colpo on E4
+    session.hit(66); // a wrong pressione on E4
     session.tick(4000); // E4 wrong
     session.tick(4000); // F4 skipped
     session.tick(4000); // G4 skipped, list over

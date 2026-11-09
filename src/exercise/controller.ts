@@ -5,21 +5,21 @@
  * :License:  GNU General Public License version 3 or later
  *
  * Between the microphone and the screen there is a rule, and this is it: what
- * each colpo does to what the allievə sees, when a target moves on, when the
+ * each pressione does to what the allievə sees, when a target moves on, when the
  * page has to say "check the volume" instead of counting, and when the session
  * is over.
  *
  * It holds no DOM and no audio: the page hands it one frame at a time — the
- * level, the colpi completed — and it asks the ports to draw, flash, beep and
+ * level, the pressioni completed — and it asks the ports to draw, flash, beep and
  * write. That is why the behaviour the ticket asks for can be read in a test
  * instead of being watched on a phone.
  *
- * It also keeps the book the session leaves: one entry per bersaglio with the
- * colpi heard while it was on screen, and the measurement each one arrived with
+ * It also keeps the book the session leaves: one entry per nota with the
+ * pressioni heard while it was on screen, and the measurement each one arrived with
  * (`log()`), which is what the downloadable log is made of. Nothing about the
- * judgement changes because of it: the book is written as the colpi pass, and
- * the bersaglio still on screen when the time runs out is not in it — it never
- * had a verdict, so its colpi are evidence of nothing.
+ * judgement changes because of it: the book is written as the pressioni pass, and
+ * the nota still on screen when the time runs out is not in it — it never
+ * had a verdict, so its pressioni are evidence of nothing.
  *
  * Two things it decides that the engine cannot know:
  *
@@ -39,20 +39,20 @@ import {
   type Verdict,
 } from '../session/engine';
 import {
-  colpoLog,
-  type ColpoLog,
-  type ColpoMeasurement,
+  pressioneLog,
+  type PressioneLog,
+  type PressioneMeasurement,
   type TargetLog,
 } from '../session/log';
 
 /**
- * What a colpo says, as far as the screen is concerned — and, since the log is
+ * What a pressione says, as far as the screen is concerned — and, since the log is
  * written from the same objects, as far as the file is concerned. The two fields
  * the judgement needs are required; the measurement the listener attaches is
  * optional, because a frame driven by hand has no detector behind it and the log
  * must be able to say `null` instead of a number nobody measured.
  */
-export type HeardColpo = ColpoMeasurement;
+export type HeardPressione = PressioneMeasurement;
 
 /** One buffer of the microphone, as the page forwards it. */
 export interface ExerciseFrame {
@@ -60,17 +60,17 @@ export interface ExerciseFrame {
   readonly at: number;
   /** Level of the frame, in dBFS. */
   readonly levelDb: number;
-  /** The colpi this frame completed. */
-  readonly colpi: readonly HeardColpo[];
+  /** The pressioni this frame completed. */
+  readonly pressioni: readonly HeardPressione[];
 }
 
 /** Everything the exercise asks the page to do. */
 export interface ExercisePorts {
   /** Put the target on the staff. */
   draw(placement: Placement): void;
-  /** The verdict of a judged colpo: green on centered, red on wrong. */
+  /** The verdict of a judged pressione: green on centered, red on wrong. */
   flash(verdict: Verdict): void;
-  /** The same neutral tone for every judged colpo: the colour tells the answer, not the sound. */
+  /** The same neutral tone for every judged pressione: the colour tells the answer, not the sound. */
   beep(): void;
   /** A line under the staff, or null to give the counter its place back. */
   message(text: string | null): void;
@@ -102,7 +102,7 @@ export interface Exercise {
   /** The clef each key was drawn in: the middle C can be written two ways. */
   placements(): ReadonlyMap<number, Clef>;
   /**
-   * The bersagli the session asked, in that order, each with the colpi heard
+   * The notes the session asked, in that order, each with the pressioni heard
    * while it was on screen. Nothing is written for the target still on display
    * when the session ends: it never had a verdict.
    */
@@ -142,34 +142,34 @@ export function createExercise(options: ExerciseOptions): Exercise {
   let announced = false;
   /** The clef each key was written in, so the summary shows the same writing. */
   const placements = new Map<number, Clef>();
-  /** The bersagli the session asked, with their colpi: the book the log is made of. */
+  /** The notes the session asked, with their pressioni: the book the log is made of. */
   const askedTargets: TargetLog[] = [];
-  /** The bersaglio on screen now, when it appeared, and the colpi landing on it. */
-  let openTarget: { key: number; colpi: ColpoLog[]; openedAt: number } | null = null;
+  /** The nota on screen now, when it appeared, and the pressioni landing on it. */
+  let openTarget: { key: number; pressioni: PressioneLog[]; openedAt: number } | null = null;
 
   /**
    * Bring the book up to date with the session: close the entries the session has
-   * closed since the last look, and start one for the bersaglio now on screen.
+   * closed since the last look, and start one for the nota now on screen.
    *
-   * The colpi of a closed entry are the ones that were collected while it was
-   * open; a bersaglio the clock closed without a colpo gets an empty list, which
+   * The pressioni of a closed entry are the ones that were collected while it was
+   * open; a nota the clock closed without a pressione gets an empty list, which
    * is what "nobody played" looks like in the file. The target on screen when the
-   * session ends is dropped with its colpi, as ADR 0003 drops it from the counts.
-   * `at` is the frame's instant: the file wants to say when a bersaglio appeared
+   * session ends is dropped with its pressioni, as ADR 0003 drops it from the counts.
+   * `at` is the frame's instant: the file wants to say when a nota appeared
    * and when it closed, and the frame is the only clock the page has.
    */
   function syncLog(at: number): void {
     const state = session.state();
     while (askedTargets.length < state.results.length) {
       const closed = state.results[askedTargets.length];
-      const colpi = openTarget !== null && openTarget.key === closed.key ? openTarget.colpi : [];
+      const pressioni = openTarget !== null && openTarget.key === closed.key ? openTarget.pressioni : [];
       askedTargets.push({
         key: closed.key,
         verdict: closed.verdict,
         elapsedMs: closed.elapsedMs,
         openedAt: openTarget?.openedAt ?? at,
         closedAt: at,
-        colpi,
+        pressioni,
       });
       openTarget = null;
     }
@@ -177,7 +177,7 @@ export function createExercise(options: ExerciseOptions): Exercise {
       openTarget = null;
       return;
     }
-    if (openTarget === null) openTarget = { key: state.current.key, colpi: [], openedAt: at };
+    if (openTarget === null) openTarget = { key: state.current.key, pressioni: [], openedAt: at };
   }
 
   function showMessage(text: string | null): void {
@@ -216,7 +216,7 @@ export function createExercise(options: ExerciseOptions): Exercise {
     const at = frame.at;
     if (lastAt !== null && at > lastAt) {
       session.tick(at - lastAt);
-      // A tick can close a bersaglio — or the session — without a colpo.
+      // A tick can close a nota — or the session — without a pressione.
       syncLog(at);
     }
     lastAt = at;
@@ -229,15 +229,15 @@ export function createExercise(options: ExerciseOptions): Exercise {
     showCurrentTarget();
     if (announceIfOver()) return;
 
-    for (const colpo of frame.colpi) {
-      // The colpo belongs to the bersaglio that was on screen when it was heard,
+    for (const pressione of frame.pressioni) {
+      // The pressione belongs to the nota that was on screen when it was heard,
       // and `hit` may close that one: keep hold of it before it moves on.
       const target = openTarget;
-      const result = session.hit(colpo.midi, colpo.ambiguous);
+      const result = session.hit(pressione.midi, pressione.ambiguous);
       if (result.kind === 'ignored') continue;
-      if (target !== null) target.colpi.push(colpoLog(colpo, at));
+      if (target !== null) target.pressioni.push(pressioneLog(pressione, at));
       syncLog(at);
-      // A colpo is sound, whatever the level of the frame it was read on.
+      // A pressione is sound, whatever the level of the frame it was read on.
       silenceSince = null;
       if (result.kind === 'ambiguous') {
         // No verdict and no try: the octave is part of the answer, so the app asks.

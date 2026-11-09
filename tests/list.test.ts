@@ -4,7 +4,7 @@
  * :Author:   Alberto Berti <alberto@metapensiero.it>
  * :License:  GNU General Public License version 3 or later
  *
- * The list is the one thing a maestra types and then hands to a ragazzə, so it
+ * The list is the one thing a teacher types and then hands to a ragazzə, so it
  * has to survive a reload, a bad file and a phone that refuses to store it. The
  * tests drive the real module and the real settings: the sequence checked here
  * is the sequence the session draws.

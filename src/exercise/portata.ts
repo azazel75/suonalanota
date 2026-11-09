@@ -43,7 +43,7 @@ export interface Portata {
   readonly quando: string;
   /** Between the outermost probes the device proved it hears. */
   readonly sente: KeyRange;
-  /** Keys the detector kept confusing: three ambiguous colpi in a row (ADR 0008). */
+  /** Keys the detector kept confusing: three ambiguous pressioni in a row (ADR 0008). */
   readonly esclusi: readonly number[];
 }
 

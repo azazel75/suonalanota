@@ -5,10 +5,10 @@ codebase.
 
 ## Before exploring, read these
 
-- **`CONTEXT.md`** at the repo root — il glossario: bersaglio, colpo, colpo ambiguo, verdetto,
-  portata udibile, soundcheck, credibilità.
+- **`CONTEXT.md`** at the repo root — il glossario: nota, pressione, pressione ambigua, tentativo,
+  verdetto, portata udibile, soundcheck, credibilità.
 - **`docs/adr/`** — leggere gli ADR che toccano l'area in cui si sta per lavorare. Qui ce ne sono
-  diciassette, e quattro riguardano il rilevatore: sbagliare l'ordine di lettura significa rifare errori già
+  diciotto, e quattro riguardano il rilevatore: sbagliare l'ordine di lettura significa rifare errori già
   misurati.
 - **`docs/spec-esercizio.md`** — cosa fa l'applicazione, con i numeri decisi.
 - **`docs/intesa.md`** — la pagina che chiude il colloquio: se il lavoro contraddice quella, va
@@ -33,7 +33,7 @@ Single-context repo (questo):
 │   └── protocollo-di-misura.md
 └── src/
     ├── audio/      il rilevatore, il microfono, le note
-    ├── exercise/   la prova, i suoi numeri, la lista della maestra
+    ├── exercise/   la prova, i suoi numeri, la lista dell'insegnante
     ├── pwa/        il guscio: manifest, service worker, registrazione
     ├── score/      il rigo e la tastiera, disegnati
     ├── screens/    una schermata, un modulo (avvio, setup, exercise, summary, wizard)
@@ -46,8 +46,8 @@ Single-context repo (questo):
 
 When your output names a domain concept (in an issue title, a refactor proposal, a hypothesis, a
 test name), use the term as defined in `CONTEXT.md`. Don't drift to synonyms the glossary explicitly
-avoids — in particular: **nota** is the written symbol, **tasto** is the key, **colpo** is the
-detected attack, **verdetto** is the outcome of a target.
+avoids — in particular: **nota** is the written symbol, **tasto** is the key, **pressione** is the
+detected attack, **tentativo** is a pressione that missed, **verdetto** is the outcome of a nota.
 
 If the concept you need isn't in the glossary yet, that's a signal — either you're inventing
 language the project doesn't use (reconsider) or there's a real gap (note it for `/domain-modeling`).

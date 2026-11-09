@@ -56,6 +56,7 @@ dev:
     {{devshell}} npm run dev -- --host
 
 # Serve dist/ over https with a throwaway certificate, so that a phone on the
-# same network can open the spike and use its microphone.
+# same network can use its microphone; it opens the page (OPEN=0 keeps it quiet).
+# `nix run .` is the same thing from outside the devShell, and with the build.
 serve-tls: build
     {{devshell}} node scripts/serve-tls.mjs

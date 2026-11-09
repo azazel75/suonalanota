@@ -36,10 +36,10 @@ export interface KeyRange {
   readonly highest: number;
 }
 
-/** The base preset: Do3–Do5. */
+/** The base interval: Do3–Do5. */
 export const BASE_RANGE: KeyRange = { lowest: 48, highest: 72 };
 
-/** The advanced preset: Si1–Re6. */
+/** The advanced interval: Si1–Re6. */
 export const ADVANCED_RANGE: KeyRange = { lowest: 35, highest: 86 };
 
 /** Everything the exercise needs to draw one target. */

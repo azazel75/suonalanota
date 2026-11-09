@@ -7,7 +7,7 @@
  * The file the summary hands over at the end of a session. It exists to answer
  * one question that the three counts cannot: when a note comes out wrong, is it
  * the allievə who missed it or the application that misheard it? So every
- * bersaglio carries the colpi the microphone actually produced, with the
+ * nota carries the pressioni the microphone actually produced, with the
  * measurement each one arrived with, and the trial that was in force is written
  * beside them — a log of ten notes on the advanced range means nothing without
  * the range, the clocks and the cap that produced it.
@@ -15,12 +15,12 @@
  * Three decisions:
  *
  *  - **the names are Italian**, because the file is opened by a teacher and not
- *    by a program: `tasto`, `verdetto`, `colpi`; a field name in English would
+ *    by a program: `tasto`, `verdetto`, `pressioni`; a field name in English would
  *    send her looking for a dictionary. The code around them stays English, as
  *    everywhere else in this repository;
  *  - **a value that was not measured is `null`, never a plausible number**: when
- *    the soundcheck has not been run, `range_misurato` is false and says so in
- *    the file rather than letting a nominal range pass for a measured one;
+ *    the soundcheck has not been run, `intervallo_misurato` is false and says so in
+ *    the file rather than letting a nominal interval pass for a measured one;
  *  - **the shape does not depend on the session**: every field is always there,
  *    in the same order, so two files can be read side by side and the indent of
  *    `JSON.stringify` is enough to read one on a phone.
@@ -37,15 +37,15 @@ import type { EndReason, SessionState, Verdict } from './engine';
 export const LOG_VERSION = 1;
 
 /**
- * What the log needs from a colpo, and nothing more.
+ * What the log needs from a pressione, and nothing more.
  *
- * The listener's `Colpo` already carries all of it — the detection travels along
+ * The listener's `Pressione` already carries all of it — the detection travels along
  * precisely so that a log can be written — and the exercise forwards it
  * untouched. Every field but the two the screen judges on is optional, because a
  * frame driven by hand in a test has no detector behind it, and the log must say
  * `null` rather than invent a margin.
  */
-export interface ColpoMeasurement {
+export interface PressioneMeasurement {
   /** The key the detector named, as a MIDI number. */
   readonly midi: number;
   /** Winner and octave too close to call: not judged, the app asked to repeat. */
@@ -54,7 +54,7 @@ export interface ColpoMeasurement {
   readonly at?: number;
   /** How far the winner stands out from the median candidate. */
   readonly credibility?: number;
-  /** Level of the frame the colpo was read on, in dBFS. */
+  /** Level of the frame the pressione was read on, in dBFS. */
   readonly levelDb?: number;
   /** How many frames the winner had already been the same key at read time. */
   readonly stability?: number;
@@ -63,17 +63,17 @@ export interface ColpoMeasurement {
 }
 
 /**
- * One colpo as the file writes it: the key it was heard as, the frequency the
+ * One pressione as the file writes it: the key it was heard as, the frequency the
  * microphone actually measured, and how sure the detector was. Both margins are
  * kept — against the runner-up and against the octave — because the second one
  * is what tells a teacher that the device, and not the allievə, was unsure.
  */
-export interface ColpoLog {
-  /** The key the colpo was heard as, MIDI. */
+export interface PressioneLog {
+  /** The key the pressione was heard as, MIDI. */
   readonly altezza: number;
   /** The frequency measured near that key's fundamental, in Hz; `null` when not measured. */
   readonly frequenza_hz: number | null;
-  /** True when the octave was too close to call: the colpo was not judged. */
+  /** True when the octave was too close to call: the pressione was not judged. */
   readonly ambiguo: boolean;
   /** Winner against the median candidate; `null` when not measured. */
   readonly credibilita: number | null;
@@ -90,13 +90,13 @@ export interface ColpoLog {
 }
 
 /**
- * One bersaglio as the exercise kept it: the key it asked for, how it closed and
- * every colpo heard while it was on screen. The target still on screen when the
- * session ends is not one of these — a bersaglio nobody got to try is not a
- * statistic (ADR 0003) — so its colpi are not in the file either.
+ * One nota as the exercise kept it: the key it asked for, how it closed and
+ * every pressione heard while it was on screen. The target still on screen when the
+ * session ends is not one of these — a nota nobody got to try is not a
+ * statistic (ADR 0003) — so its pressioni are not in the file either.
  */
 export interface TargetLog {
-  /** MIDI number of the bersaglio. */
+  /** MIDI number of the nota. */
   readonly key: number;
   readonly verdict: Verdict;
   /** How long it stayed on screen, in milliseconds. */
@@ -105,7 +105,7 @@ export interface TargetLog {
   readonly openedAt: number;
   /** When it left the screen, on the page's clock, in milliseconds. */
   readonly closedAt: number;
-  readonly colpi: readonly ColpoLog[];
+  readonly pressioni: readonly PressioneLog[];
 }
 
 /** Everything the page knows when the session is over. */
@@ -116,7 +116,7 @@ export interface SessionLogInput {
   readonly settings: Settings;
   /** The finished session: counts, elapsed time and why it ended. */
   readonly state: SessionState;
-  /** What the exercise heard, one entry per bersaglio, in the order it asked. */
+  /** What the exercise heard, one entry per nota, in the order it asked. */
   readonly targets: readonly TargetLog[];
   /**
    * Whether the range was measured by a soundcheck. False when the step was
@@ -136,11 +136,11 @@ export interface SessionLogInput {
 export interface SettingsLog {
   readonly intervallo: { readonly minimo: number; readonly massimo: number };
   readonly durata_secondi: number;
-  readonly tempo_per_bersaglio_secondi: number;
-  readonly tetto_colpi: number | null;
+  readonly tempo_per_nota_secondi: number;
+  readonly tentativi_massimi: number | null;
   readonly modalita: string;
-  /** The preset in force, by the name the settings screen showed; `null` when not used. */
-  readonly preset: string | null;
+  /** The predefined list in force, by the name the settings screen showed; `null` when not used. */
+  readonly lista_predefinita: string | null;
 }
 
 /** The log, as a value: `logJson` turns it into the file. */
@@ -162,15 +162,15 @@ export interface SessionLog {
     readonly totale: number;
     readonly note_al_minuto: number;
   };
-  readonly bersagli: readonly {
+  readonly note: readonly {
     readonly tasto: number;
     readonly nome: string;
     readonly verdetto: string;
     readonly millisecondi: number;
-    /** When the bersaglio appeared and when it left the staff, on the page's clock. */
+    /** When the nota appeared and when it left the staff, on the page's clock. */
     readonly inizio_ms: number;
     readonly fine_ms: number;
-    readonly colpi: readonly ColpoLog[];
+    readonly pressioni: readonly PressioneLog[];
   }[];
 }
 
@@ -181,17 +181,17 @@ const VERDICT_NAMES: Readonly<Record<Verdict, string>> = {
   skipped: 'saltata',
 };
 
-/** The three ways a session picks its bersagli, in the words of the settings screen. */
+/** The three ways a session picks its notes, in the words of the settings screen. */
 const MODE_NAMES: Readonly<Record<SequenceMode, string>> = {
   random: 'casuale',
-  preset: 'preset',
-  list: 'lista',
+  preset: 'lista predefinita',
+  list: "lista dell'insegnante",
 };
 
 /** Why the session ended, as the summary says it. */
 const END_NAMES: Readonly<Record<EndReason, string>> = {
   duration: 'tempo',
-  targets: 'lista',
+  targets: 'note',
 };
 
 const NOT_MEASURED =
@@ -203,11 +203,11 @@ const MEASURED =
   "l'intersezione fra l'intervallo nominale, l'estensione dello strumento e ciò che il microfono sente.";
 
 /**
- * One colpo, measured or not. `at` is the frame's instant, used only when the
- * colpo did not come with one of its own: the listener knows when the attack was
+ * One pressione, measured or not. `at` is the frame's instant, used only when the
+ * pressione did not come with one of its own: the listener knows when the attack was
  * heard, and that is the instant worth writing down.
  */
-export function colpoLog(heard: ColpoMeasurement, at: number): ColpoLog {
+export function pressioneLog(heard: PressioneMeasurement, at: number): PressioneLog {
   const detection = heard.detection;
   return {
     altezza: heard.midi,
@@ -241,11 +241,11 @@ export function sessionLog(input: SessionLogInput): SessionLog {
     impostazioni: {
       intervallo: { minimo: settings.range.lowest, massimo: settings.range.highest },
       durata_secondi: settings.durationMs / 1000,
-      tempo_per_bersaglio_secondi: settings.targetTimeoutMs / 1000,
-      tetto_colpi: settings.wrongLimit,
+      tempo_per_nota_secondi: settings.targetTimeoutMs / 1000,
+      tentativi_massimi: settings.wrongLimit,
       modalita: MODE_NAMES[settings.mode],
-      // A preset nobody played says nothing about the session.
-      preset: settings.mode === 'preset' && preset !== undefined ? preset.name : null,
+      // A predefined list nobody played says nothing about the session.
+      lista_predefinita: settings.mode === 'preset' && preset !== undefined ? preset.name : null,
     },
     soundcheck: {
       intervallo_misurato: input.rangeMeasured ?? false,
@@ -265,14 +265,14 @@ export function sessionLog(input: SessionLogInput): SessionLog {
       totale: state.score.total,
       note_al_minuto: state.score.notesPerMinute,
     },
-    bersagli: input.targets.map((target) => ({
+    note: input.targets.map((target) => ({
       tasto: target.key,
       nome: midiToItalian(target.key),
       verdetto: VERDICT_NAMES[target.verdict],
       millisecondi: Math.round(target.elapsedMs),
       inizio_ms: Math.round(target.openedAt),
       fine_ms: Math.round(target.closedAt),
-      colpi: target.colpi,
+      pressioni: target.pressioni,
     })),
   };
 }

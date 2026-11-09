@@ -12,17 +12,17 @@
  * The verdict is decided by **how the target closes**, never by the clock alone
  * (docs/adr/0003, updated by docs/adr/0008):
  *
- *  | event                                         | verdict   |
- *  | a colpo contains the target's exact key       | centered  |
- *  | the target is closed by the wrong-hits cap    | wrong     |
- *  | the target time runs out, after a wrong colpo | wrong     |
- *  | the target time runs out, without one         | skipped   |
- *  | the session ends with the target on screen    | uncounted |
+ *  | event                                               | verdict   |
+ *  | a pressione contains the target's exact key         | centered  |
+ *  | the target is closed by the attempt limit           | wrong     |
+ *  | the target time runs out, after a wrong pressione   | wrong     |
+ *  | the target time runs out, without one               | skipped   |
+ *  | the session ends with the target on screen          | uncounted |
  *
- * A **colpo ambiguo** is not judged at all: the detector could not pick the
+ * A **pressione ambigua** is not judged at all: the detector could not pick the
  * octave, so guessing would punish a correct answer. It costs no try, it is
  * only counted on the target (the log shows how unsure the device is on that
- * key), and a target closed by the clock with nothing but ambiguous colpi is
+ * key), and a target closed by the clock with nothing but ambiguous pressioni is
  * *skipped*, not *wrong*: the allievə has not tried yet.
  *
  * Three decisions this module makes, and why:
@@ -37,7 +37,7 @@
  *    dropped, and never past the end of the session.
  *
  * The pause stops both clocks and touches nothing else: no time is consumed,
- * no colpo is judged, no count changes.
+ * no pressione is judged, no count changes.
  */
 
 /** How a target closed. The three values of the glossary, no fourth. */
@@ -59,7 +59,7 @@ export interface SessionConfig {
   /** Time a single target stays on screen, in milliseconds. */
   targetTimeoutMs?: number;
   /**
-   * Wrong colpi after which a target closes as *wrong*. Off when absent: the
+   * Wrong pressioni after which a target closes as *wrong*. Off when absent: the
    * only limit left is the target's time.
    */
   wrongLimit?: number;
@@ -78,9 +78,9 @@ export interface ClosedTarget {
   /** MIDI number of the target. */
   readonly key: number;
   readonly verdict: Verdict;
-  /** Non-ambiguous colpi that were not the target. */
+  /** Non-ambiguous pressioni that were not the target. */
   readonly wrongHits: number;
-  /** Colpi the detector could not judge. Recorded, never counted. */
+  /** Pressioni the detector could not judge. Recorded, never counted. */
   readonly ambiguousHits: number;
   /** Time the target stayed on screen, in milliseconds. */
   readonly elapsedMs: number;
@@ -122,7 +122,7 @@ export interface SessionState {
 }
 
 /**
- * What a colpo did, so the screen does not have to re-derive the rule:
+ * What a pressione did, so the screen does not have to re-derive the rule:
  *
  *  - `verdict` — the target closed, with this verdict (green on centered);
  *  - `wrong` — counted, the target stays on screen (red, try again);
@@ -137,7 +137,7 @@ export type HitResult =
 
 /** The session, driven from outside. */
 export interface Session {
-  /** One colpo: the keys it was heard as, and whether the octave is uncertain. */
+  /** One pressione: the keys it was heard as, and whether the octave is uncertain. */
   hit(pitches: number | readonly number[], ambiguous?: boolean): HitResult;
   /** Advance the clocks by this much time. Ignored while paused or over. */
   tick(ms: number): void;

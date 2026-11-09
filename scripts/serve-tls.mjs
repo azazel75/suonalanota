@@ -5,14 +5,16 @@
  * :License:  GNU General Public License version 3 or later
  *
  * getUserMedia exists only in a secure context, and http://192.168.x.y is not
- * one. This serves the built directory over https with a certificate openssl
- * generates for the occasion, valid for localhost and for every local IPv4 the
- * machine currently has. The browser will still warn: accept once per device.
+ * one. This serves the built directory — `dist/`, relative to the working
+ * directory — over https with a certificate openssl generates for the occasion,
+ * valid for localhost and for every local IPv4 the machine currently has. The
+ * browser will still warn: accept once per device. Once the port answers, the
+ * page is opened with `xdg-open`; `OPEN=0` keeps it quiet.
  *
  * Not a deployment: there is no cache header, no compression and no range
- * request here, because none of that is what the spike is measuring.
+ * request here, because none of that is what this server is for.
  */
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { createReadStream, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:https';
 import { networkInterfaces } from 'node:os';
@@ -104,12 +106,21 @@ server.on('error', (error) => {
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`\nsuona-la-nota · dist/ servito in HTTPS`);
-  console.log(`va aperto con https://, non con http://: su questa porta http non risponde\n`);
+  const page = `https://localhost:${PORT}/`;
+  console.log(`\nsuona-la-nota · l'applicazione è servita in HTTPS`);
+  console.log(`va aperta con https://, non con http://: su questa porta http non risponde\n`);
   for (const address of addresses) {
-    console.log(`  dal telefono:  https://${address}:${PORT}/spike/ascolto.html`);
+    console.log(`  dal telefono:  https://${address}:${PORT}/`);
   }
-  console.log(`  da questa macchina:  https://localhost:${PORT}/spike/ascolto.html`);
+  console.log(`  da questa macchina:  ${page}`);
   console.log(`\nIl browser avviserà che il certificato non è firmato: accettalo una volta.`);
   console.log('Ctrl-C per fermarlo.');
+
+  // The page is opened for whoever asked for a server, once it is actually
+  // listening; `OPEN=0` keeps it quiet (the smoke check, a script).
+  if (process.env.OPEN !== '0') {
+    const opener = spawn('xdg-open', [page], { stdio: 'ignore', detached: true });
+    opener.on('error', () => console.log(`\napri tu: ${page}`));
+    opener.unref();
+  }
 });

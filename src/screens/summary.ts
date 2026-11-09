@@ -10,7 +10,7 @@
  *
  * The log is built once, here, when the session ends and from the state the
  * summary is showing — after that instant the page forgets the session, and the
- * file is all that is left of it. Even a session that closed no bersaglio has a
+ * file is all that is left of it. Even a session that closed no note has a
  * log: the settings in force and the score are evidence too, and "no log at
  * all" would be the one answer a teacher cannot read (docs/adr/0012).
  *
@@ -61,7 +61,7 @@ export interface SessionResult {
   readonly portata: Portata | null;
   /** The clef each key was drawn in: the middle C can be written two ways. */
   readonly clefs: ReadonlyMap<number, Clef>;
-  /** The bersagli the session asked, each with the colpi heard while it was on screen. */
+  /** The notes the session asked, each with the pressioni heard while it was on screen. */
   readonly targets: readonly TargetLog[];
 }
 
@@ -218,7 +218,7 @@ export function createSummaryScreen(ports: SummaryPorts): SummaryScreen {
   function show(result: SessionResult): void {
     const summary = summarise(result.state, result.clefs);
     summaryReason.textContent =
-      result.reason === 'duration' ? 'È scaduto il tempo.' : 'La lista dei bersagli è finita.';
+      result.reason === 'duration' ? 'È scaduto il tempo.' : 'La lista delle note è finita.';
     summaryScore.textContent = [
       count(summary.centered, 'corretta', 'corrette'),
       count(summary.wrong, 'sbagliata', 'sbagliate'),

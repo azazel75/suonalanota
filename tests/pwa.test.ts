@@ -292,7 +292,7 @@ const PAGE = [
   '<link rel="icon" href="/favicon.svg" type="image/svg+xml" />',
   '<script type="module" crossorigin src="/assets/app-abc.js"></script>',
   '<link rel="modulepreload" crossorigin href="/assets/listener-def.js">',
-  '<a href="/spike/ascolto.html">Lo spike dell\'ascolto</a>',
+  '<a href="/spike/ascolto.html">Lo spike del microfono</a>',
 ].join('\n');
 
 function bundle(): Bundle {

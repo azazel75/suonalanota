@@ -20,12 +20,12 @@
  *  - the **random** sequence is a shuffle, not a draw: a key already asked
  *    cannot come back in the same session, and when the range is exhausted the
  *    session ends by itself with the engine's `targets` reason;
- *  - a **preset** or a **list** is filtered on the active range: the spec says
+ *  - a **predefined list** or the teacher's **list** is filtered on the active range: the spec says
  *    no note outside the range is ever proposed, so the sequence shortens
  *    instead of asking for a key the allievə cannot play — and if nothing is
  *    left, `problemWith` says it instead of starting an empty session.
  *
- * The presets are a didactic choice, not a measurement: difficulty grows with
+ * The predefined lists are a didactic choice, not a measurement: difficulty grows with
  * the distance from the middle C and with the ledger lines. All of them stay
  * inside the base range, so they play on both ranges; a narrower range filters
  * them like everything else. The names are what a teacher reads on the screen.
@@ -76,10 +76,10 @@ const TREBLE_STAFF = [60, 62, 64, 65, 67, 69, 71, 72];
  */
 const BOTH_CLEFS = [60, 48, 62, 50, 64, 52, 65, 53, 67, 55, 69, 57, 71, 59];
 
-/** The presets, easiest first: one clef, then the other, then both. */
+/** The predefined lists, easiest first: one clef, then the other, then both. */
 export const PRESETS: readonly Preset[] = [
-  { id: 'prime-note', name: 'Prime note, in violino', keys: TREBLE_STAFF },
-  { id: 'rigo-di-basso', name: 'Il rigo di basso', keys: BASS_STAFF },
+  { id: 'prime-note', name: 'Prime note, in chiave di violino', keys: TREBLE_STAFF },
+  { id: 'rigo-di-basso', name: 'Prime note, in chiave di basso', keys: BASS_STAFF },
   { id: 'due-chiavi', name: 'Le due chiavi', keys: BOTH_CLEFS },
 ];
 
@@ -91,10 +91,10 @@ export interface Settings {
   readonly durationMs: number;
   /** Time a single target stays on screen, in milliseconds. */
   readonly targetTimeoutMs: number;
-  /** Wrong colpi that close a target as *wrong*; `null` when the cap is off. */
+  /** Wrong pressioni that close a target as *wrong*; `null` when the cap is off. */
   readonly wrongLimit: number | null;
   readonly mode: SequenceMode;
-  /** The preset in force when the mode is `preset`. */
+  /** The predefined list in force when the mode is `preset`. */
   readonly presetId: string;
   /** The teacher's list, in the order she composed it; empty until ticket 07. */
   readonly list: readonly number[];
@@ -173,7 +173,7 @@ export function randomSequence(
   return keys;
 }
 
-/** The chosen preset, shortened to the active range. */
+/** The chosen predefined list, shortened to the active range. */
 export function presetKeys(settings: Settings): number[] {
   const preset = PRESETS.find((candidate) => candidate.id === settings.presetId);
   if (preset === undefined) return [];
@@ -202,13 +202,13 @@ export function sequenceFor(
 }
 
 const NOTHING_TO_ASK: Readonly<Record<SequenceMode, string>> = {
-  random: 'Il range scelto non contiene nessuna nota.',
-  preset: 'La progressione scelta non ha note nel range.',
+  random: "L'intervallo scelto non contiene nessuna nota.",
+  preset: "La lista predefinita scelta non ha note nell'intervallo.",
   list: 'La lista è vuota: nessuna nota da chiedere.',
 };
 
 /** The list has keys, but not one of them is in the range in force. */
-const LIST_OUTSIDE_RANGE = 'Nessun tasto della lista è nel range scelto.';
+const LIST_OUTSIDE_RANGE = "Nessun tasto della lista è nell'intervallo scelto.";
 
 /**
  * Why this trial cannot start, or `null` when it can. The page asks before
@@ -281,7 +281,7 @@ function numberParameter(params: URLSearchParams, name: string): number | null {
 /**
  * The trial a URL dictates: the main parameters it carries, the defaults for
  * the ones it leaves out. `duration` and `timeout` are seconds, `lowest` and
- * `highest` are MIDI numbers, `cap` is a number of wrong colpi (absent or below
+ * `highest` are MIDI numbers, `cap` is a number of wrong pressioni (absent or below
  * one means no cap), `mode` is `random`, `preset` or `list`, `preset` is one of
  * `PRESETS`, `range` is `base` or `advanced`. A value that makes no sense is
  * ignored — but its presence still means the URL chose the trial, so the
