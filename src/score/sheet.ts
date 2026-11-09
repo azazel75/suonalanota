@@ -20,9 +20,17 @@
  * font families (Gonville, Petaluma...) that this page never uses, and in a PWA
  * aimed at a phone 300 kB of extra gzip is not a detail.
  */
-import { Accidental, Formatter, Renderer, Stave, StaveNote, Voice } from 'vexflow/bravura';
+import { Accidental, Formatter, Renderer, Stave, StaveModifierPosition, StaveNote, Voice } from 'vexflow/bravura';
 
-import { EXERCISE_SHEET, topLineFor, type SheetGeometry } from './layout';
+import {
+  clefFontPt,
+  EXERCISE_SHEET,
+  LEDGER_SPACES,
+  LINE_SPACES,
+  noteheadFontPt,
+  topLineFor,
+  type SheetGeometry,
+} from './layout';
 import type { Placement } from './staff';
 
 /** Draw the target, and nothing else, in the given host. */
@@ -74,10 +82,28 @@ function draw(
       rightBar: false,
     });
     stave.addClef(clef);
+    // VexFlow draws every glyph with one fixed font, calibrated on its own staff
+    // spacing of 10 px. This stave is not 10 px: the clef, the noteheads and the
+    // accidentals have to be told the size the space actually has, or they come
+    // out a third of it. The lines are absolute too, and get the same treatment.
+    for (const modifier of stave.getModifiers(StaveModifierPosition.BEGIN)) {
+      if (modifier.getCategory() === 'Clef') modifier.setFontSize(clefFontPt(sheet.spacing));
+    }
+    stave.setStyle({ lineWidth: sheet.spacing * LINE_SPACES });
+    stave.setDefaultLedgerLineStyle({ strokeStyle: '#444', lineWidth: sheet.spacing * LEDGER_SPACES });
 
+    const glyphPt = noteheadFontPt(sheet.spacing);
     const notes = placements.map((placement) => {
       const note = new StaveNote({ keys: [placement.vexKey], duration: 'w', clef });
-      if (placement.accidental !== null) note.addModifier(new Accidental(placement.accidental), 0);
+      // The noteheads are built in the constructor, with the font the note had
+      // then: set the size and build them again.
+      note.setFontSize(glyphPt);
+      note.buildNoteHeads();
+      if (placement.accidental !== null) {
+        const accidental = new Accidental(placement.accidental);
+        accidental.setFontSize(glyphPt);
+        note.addModifier(accidental, 0);
+      }
       return note;
     });
 
@@ -95,7 +121,13 @@ function draw(
       notes[0].getTickContext().setX(centre - notes[0].getGlyphWidth() / 2);
     }
 
+    // VexFlow's stave reads its style only to nudge an odd width to the half
+    // pixel: the stroke itself comes from the context, which is why the width is
+    // set here and put back before the notes (whose ledger lines carry their own).
+    const staveLineWidth = sheet.spacing * LINE_SPACES;
+    context.setLineWidth(staveLineWidth);
     stave.setContext(context).draw();
+    context.setLineWidth(1);
     voice.draw(context, stave);
     fitToWidth(host, sheet, capWidth);
   } catch (error) {

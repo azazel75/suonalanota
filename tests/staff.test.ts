@@ -13,7 +13,7 @@
 import { expect, test } from 'vitest';
 
 import { midiToItalian } from '../src/audio/notes';
-import { LINE_SPACING, SHEET_HEIGHT, TOP_LINE, fitsSheet, topLineY, yOfStep } from '../src/score/layout';
+import { LINE_SPACING, SHEET_HEIGHT, fitsSheet, outerInk, topLineY, yOfStep } from '../src/score/layout';
 import {
   ADVANCED_RANGE,
   BASE_RANGE,
@@ -234,12 +234,17 @@ test('the staff moves so that the target stays whole on the sheet', () => {
   }
 });
 
-test('the drawing is centred on the sheet, five lines and ledger lines both', () => {
+test('the drawing is centred on the sheet, with the room the clef asks for', () => {
   for (const [midi, name, clef] of TABLE) {
     const placement = placeOnStaff(midi, clef);
     const topLine = topLineY(placement);
-    const steps = [0, TOP_LINE, placement.step, ...placement.ledgerLines];
-    const height = steps.map((step) => yOfStep(topLine, step));
-    expect(Math.min(...height) + Math.max(...height), `the centre of ${name}`).toBeCloseTo(SHEET_HEIGHT, 9);
+    const { above, below } = outerInk([placement], LINE_SPACING);
+    // What the sheet reserves — the notes' ink or the clef's, whichever is
+    // taller — is what gets centred, and it has to fit the paper.
+    const top = topLine - above;
+    const bottom = topLine + 4 * LINE_SPACING + below;
+    expect(top + bottom, `the centre of ${name}`).toBeCloseTo(SHEET_HEIGHT, 9);
+    expect(top, `the top of ${name}`).toBeGreaterThanOrEqual(-1e-9);
+    expect(bottom, `the bottom of ${name}`).toBeLessThanOrEqual(SHEET_HEIGHT + 1e-9);
   }
 });

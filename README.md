@@ -240,15 +240,24 @@ stanza silenziosa, latenza attacco → verdetto < 400 ms. Il registro grave
   una riga per ragazzə.
 - [0016](docs/adr/0016-il-guscio-offline.md) — manifest e service worker emessi
   dal build.
+- [0017](docs/adr/0017-il-soundcheck.md) — il soundcheck: un passo a richiesta,
+  non un cancello.
+- [0018](docs/adr/0018-le-parole-dell-esercizio.md) — le parole dell'esercizio:
+  la nota, la pressione, il tentativo.
+- [0019](docs/adr/0019-le-proporzioni-del-rigo.md) — le proporzioni del rigo:
+  il font segue lo spazio.
 
 ## Cosa non è ancora verificato
 
-- **L'acustica.** I test coprono l'aritmetica del rilevatore su segnali
-  sintetici. Nessun pianoforte vero è ancora passato dal microfono di un
-  telefono vero: è esattamente ciò che lo spike deve misurare, e finché non è
-  misurato non ci sono stime di tempi.
+- **L'acustica in una lezione vera.** Il rilevatore è stato misurato su un
+  pianoforte vero (`docs/protocollo-di-misura.md`, giri 1–7); l'esercizio no: una
+  classe, un telefono sul leggio, più di un allievə alla volta.
+- **Il soundcheck su un telefono vero.** La misura dell'estensione e della portata
+  è provata con un microfono finto e con misure seminate, non suonando davanti a un
+  telefono.
 - **Il rigo in mano a un ragazzə.** La grafica è verificata in un browser senza
-  testa a 390×844: non su un telefono vero, alla luce di una stanza, con le dita
+  testa a 390×844, e le proporzioni le ha giudicate chi legge gli spartiti; non è
+  ancora stata guardata su un telefono vero, alla luce di una stanza, con le dita
   di chi suona.
 
 ## Com'è fatto il repository
