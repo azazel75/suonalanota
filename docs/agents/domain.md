@@ -8,7 +8,7 @@ codebase.
 - **`CONTEXT.md`** at the repo root — il glossario: nota, pressione, pressione ambigua, tentativo,
   verdetto, portata udibile, soundcheck, credibilità.
 - **`docs/adr/`** — leggere gli ADR che toccano l'area in cui si sta per lavorare. Qui ce ne sono
-  ventuno, e quattro riguardano il rilevatore: sbagliare l'ordine di lettura significa rifare errori già
+  ventidue, e quattro riguardano il rilevatore: sbagliare l'ordine di lettura significa rifare errori già
   misurati.
 - **`docs/spec-esercizio.md`** — cosa fa l'applicazione, con i numeri decisi.
 - **`docs/intesa.md`** — la pagina che chiude il colloquio: se il lavoro contraddice quella, va

@@ -13,7 +13,9 @@ L'altezza richiesta è **esatta**: l'ottava fa parte della risposta.
 
 ## Durata
 
-Sessione di 60 secondi, configurabile. Il tempo parte quando appare la prima nota. Una pausa
+Sessione di 60 secondi, configurabile. Il tempo parte quando si preme **Inizia**. La prima nota
+è già sul rigo da quando si arriva sulla schermata — è la nota che si suonerà, non un esempio — e
+resta ferma al tocco: il tempo di guardarla non si conta, quello delle note successive sì. Una pausa
 esiste ma non consuma tempo. La sessione finisce quando scade il tempo **o** quando la lista delle
 note è esaurita, e il riepilogo dice quale delle due.
 

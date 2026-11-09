@@ -27,7 +27,7 @@ import { createExercise, type Exercise } from '../exercise/controller';
 import { effectiveRange, type Portata } from '../exercise/portata';
 import { sequenceFor, sessionConfigOf, type Settings } from '../exercise/settings';
 import { drawTarget } from '../score/sheet';
-import { keysInRange, nearestPlacement } from '../score/staff';
+import { nearestPlacement } from '../score/staff';
 import type { EndReason, SessionState, Verdict } from '../session/engine';
 import { element } from '../ui/dom';
 import { count } from '../ui/text';
@@ -90,18 +90,40 @@ export function createExerciseScreen(ports: ExercisePorts): ExerciseScreen {
   let running: Running | null = null;
   /** True from the click to the microphone being open: a second click must not start a second session. */
   let starting = false;
+  /**
+   * The notes the session will ask, in order, built when the screen opens.
+   *
+   * It exists so that the paper can show the first one before the microphone
+   * opens: the allievə reads that note, decides the finger, presses "Inizia",
+   * and the note stays where it is. Drawing a note at random and replacing it
+   * on the click taught the opposite (`drawPreview` did exactly that until
+   * ADR 0022). Nothing can change the trial while this screen is in front, so
+   * the sequence built here is the one that is played; the defensive path in
+   * `start()` is for a future screen that forgets to call `enter()` first.
+   */
+  let pending: number[] | null = null;
   let flashTimer: number | null = null;
 
   function busy(): boolean {
     return running !== null || starting;
   }
 
-  /** Something on the paper before the allievə presses anything, on the chosen range. */
-  function drawPreview(): void {
-    if (busy()) return;
-    const range = effectiveRange(ports.settings().range, ports.portata()) ?? ports.settings().range;
-    const keys = keysInRange(range);
-    drawTarget(sheet, nearestPlacement(keys[Math.floor(Math.random() * keys.length)]));
+  /** The trial as it will be played: the nominal range cut to what the phone hears. */
+  function trialNow(): Settings {
+    const settings = ports.settings();
+    const measured = ports.portata();
+    return { ...settings, range: effectiveRange(settings.range, measured) ?? settings.range };
+  }
+
+  /**
+   * The first note of the session, on the paper before the microphone opens.
+   * The clef is the one the session will write it in: nothing has been written
+   * yet, so the middle C position takes its first clef, as it does when the
+   * session draws it.
+   */
+  function drawPreview(keys: readonly number[]): void {
+    if (busy() || keys.length === 0) return;
+    drawTarget(sheet, nearestPlacement(keys[0]));
   }
 
   function flash(verdict: Verdict): void {
@@ -163,9 +185,11 @@ export function createExerciseScreen(ports: ExercisePorts): ExerciseScreen {
     ports.wizard.show('exercise');
     const problem = ports.refreshSetup();
     if (problem === null) {
-      drawPreview();
+      pending = sequenceFor(trialNow());
+      drawPreview(pending);
       statusLine.textContent = 'Premi Inizia, poi suona la nota che vedi.';
     } else {
+      pending = null;
       statusLine.textContent = problem;
     }
     backButton.hidden = false;
@@ -173,6 +197,7 @@ export function createExerciseScreen(ports: ExercisePorts): ExerciseScreen {
 
   function backToSetup(): void {
     if (busy()) return;
+    pending = null;
     ports.summary.clear();
     ports.wizard.show('setup');
     pauseButton.hidden = true;
@@ -196,8 +221,7 @@ export function createExerciseScreen(ports: ExercisePorts): ExerciseScreen {
       ports.refreshSetup();
       return;
     }
-    const effective = effectiveRange(settings.range, measured) ?? settings.range;
-    const trial: Settings = { ...settings, range: effective };
+    const trial = trialNow();
 
     // From here to the open microphone nothing is to be touched: the way back
     // goes away at once, so no change can land on a trial already being built.
@@ -238,10 +262,13 @@ export function createExerciseScreen(ports: ExercisePorts): ExerciseScreen {
       return;
     }
 
-    // The sequence is drawn once, at the start: the range cannot be exhausted
-    // and refilled behind the allievə's back.
+    // The sequence drawn when the screen opened is the one played: the note
+    // the allievə has been reading must not move on the click. It is drawn
+    // once, too, so the range cannot be exhausted and refilled behind their back.
+    const keys = pending ?? sequenceFor(trial);
+    pending = null;
     const exercise = createExercise({
-      keys: sequenceFor(trial),
+      keys,
       config: sessionConfigOf(settings),
       ports: {
         draw: (placement) => drawTarget(sheet, placement),

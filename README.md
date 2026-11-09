@@ -254,6 +254,8 @@ stanza silenziosa, latenza attacco → verdetto < 400 ms. Il registro grave
   quando l'utente dice sì.
 - [0021](docs/adr/0021-il-tema-del-sistema.md) — il tema è quello del sistema:
   chiaro o scuro come lo è già il telefono.
+- [0022](docs/adr/0022-la-prima-nota-e-quella-che-vedi.md) — la prima nota è
+  quella che vedi: Inizia apre il microfono, non un'altra nota.
 
 ## Cosa non è ancora verificato
 
